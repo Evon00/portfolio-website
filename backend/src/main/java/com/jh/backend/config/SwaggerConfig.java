@@ -165,6 +165,7 @@ public class SwaggerConfig {
             case UNAUTHORIZED, FORBIDDEN -> "인증 및 권한 오류";
             case NOT_FOUND -> "존재하지 않는 데이터";
             case CONFLICT -> "데이터 충돌";
+            case TOO_MANY_REQUESTS -> "요청 횟수 초과";
             default -> "잘못된 호출";
         };
     }

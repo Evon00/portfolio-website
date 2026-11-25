@@ -33,6 +33,6 @@ import java.lang.annotation.Target;
                 Refresh Token은 `refreshToken` HttpOnly 쿠키로 전달됩니다. (14일)
                 """
 )
-@ApiExceptionDocs({ExceptionCode.REFRESH_JWT_EXPIRED, ExceptionCode.REFRESH_JWT_INVALID})
+@ApiExceptionDocs({ExceptionCode.REFRESH_JWT_EXPIRED, ExceptionCode.REFRESH_JWT_INVALID, ExceptionCode.TOO_MANY_REQUESTS})
 public @interface RefreshSwaggerDocs {
 }

@@ -38,6 +38,6 @@ import java.lang.annotation.Target;
                 Refresh Token은 `refreshToken` HttpOnly 쿠키로 전달됩니다. (14일)
                 """
 )
-@ApiExceptionDocs({ExceptionCode.VALID_ERROR, ExceptionCode.NOT_READABLE_JSON, ExceptionCode.ADMIN_LOGIN_FAILED})
+@ApiExceptionDocs({ExceptionCode.VALID_ERROR, ExceptionCode.NOT_READABLE_JSON, ExceptionCode.ADMIN_LOGIN_FAILED, ExceptionCode.TOO_MANY_REQUESTS})
 public @interface LoginSwaggerDocs {
 }

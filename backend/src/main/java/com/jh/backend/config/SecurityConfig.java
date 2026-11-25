@@ -2,6 +2,8 @@ package com.jh.backend.config;
 
 import com.jh.backend.common.enums.Role;
 import com.jh.backend.common.properties.CorsProperties;
+import com.jh.backend.common.properties.RateLimitProperties;
+import com.jh.backend.util.ip.RateLimitFilter;
 import com.jh.backend.util.jwt.JwtAccessDeniedHandler;
 import com.jh.backend.util.jwt.JwtAuthenticationEntryPoint;
 import com.jh.backend.util.jwt.JwtFilter;
@@ -10,6 +12,8 @@ import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -21,6 +25,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import java.util.List;
 
@@ -32,6 +37,9 @@ public class SecurityConfig {
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final CorsProperties corsProperties;
+    private final RateLimitProperties rateLimitProperties;
+    private final StringRedisTemplate redisTemplate;
+    private final HandlerExceptionResolver handlerExceptionResolver;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -70,6 +78,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/**").permitAll()
                         .anyRequest().denyAll()
                 )
+                .addFilterBefore(new RateLimitFilter(rateLimitProperties, redisTemplate, handlerExceptionResolver), UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(new JwtFilter(jwtProvider), UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
@@ -89,6 +98,7 @@ public class SecurityConfig {
         config.setAllowedOrigins(corsProperties.allowedOrigins());
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
+        config.setExposedHeaders(List.of(HttpHeaders.RETRY_AFTER));
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
