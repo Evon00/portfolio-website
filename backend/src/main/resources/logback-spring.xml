@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- Console Log Color Filter -->
+    <property name="COLOR_PATTERN" value="[%X{clientIp}] [%d{yyyy-MM-dd HH:mm:ss.SSS}] %highlight(%-5level) %cyan([%thread]) %magenta(%logger{36}) : %msg%n"/>
+    <!-- Log Pattern -->
+    <property name="FILE_PATTERN" value="[%X{clientIp}] [%d{yyyy-MM-dd HH:mm:ss.SSS}] %-5level [%thread] %logger{36} : %msg%n"/>
+
+    <!-- CONSOLE Appender -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${COLOR_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 기본(개발) : CONSOLE -->
+    <springProfile name="!prod">
+        <logger name="com.jh.backend" level="DEBUG"/>
+        <logger name="org.springframework.security" level="WARN"/>
+        <logger name="org.hibernate.SQL" level="DEBUG"/>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <!-- 운영 : CONSOLE + app.log + error.log -->
+    <springProfile name="prod">
+        <springProperty scope="context" name="LOG_DIR" source="logging.file.path" defaultValue="/var/www/app/logs"/>
+
+        <!-- APP FILE Appender (INFO) -->
+        <appender name="APP_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>${LOG_DIR}/app.log</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>${LOG_DIR}/app.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+                <maxFileSize>100MB</maxFileSize>
+                <maxHistory>30</maxHistory>
+                <totalSizeCap>1GB</totalSizeCap>
+            </rollingPolicy>
+            <encoder>
+                <pattern>${FILE_PATTERN}</pattern>
+            </encoder>
+        </appender>
+
+        <!-- ERROR FILE Appender (ERROR) -->
+        <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>${LOG_DIR}/error.log</file>
+            <filter class="ch.qos.logback.classic.filter.LevelFilter">
+                <level>ERROR</level>
+                <onMatch>ACCEPT</onMatch>
+                <onMismatch>DENY</onMismatch>
+            </filter>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>${LOG_DIR}/error.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+                <maxFileSize>100MB</maxFileSize>
+                <maxHistory>30</maxHistory>
+                <totalSizeCap>1GB</totalSizeCap>
+            </rollingPolicy>
+            <encoder>
+                <pattern>${FILE_PATTERN}</pattern>
+            </encoder>
+        </appender>
+
+        <logger name="com.jh.backend" level="INFO"/>
+        <logger name="org.springframework.security" level="WARN"/>
+        <logger name="org.hibernate.SQL" level="WARN"/>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="APP_FILE"/>
+            <appender-ref ref="ERROR_FILE"/>
+        </root>
+    </springProfile>
+
+</configuration>
