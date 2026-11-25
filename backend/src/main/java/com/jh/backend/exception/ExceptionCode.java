@@ -53,6 +53,8 @@ public enum ExceptionCode {
     VALID_ERROR("COMMON_400", HttpStatus.BAD_REQUEST, "데이터 검증 오류가 발생하였습니다."),
     INVALID_REQUEST_PARAM("COMMON_400", HttpStatus.BAD_REQUEST, "요청 파라미터가 올바르지 않습니다."),
     MISSING_PATH_VARIABLE("COMMON_400", HttpStatus.BAD_REQUEST, "필수 경로 변수가 누락되었습니다."),
+    FILE_REQUIRED("COMMON_400", HttpStatus.BAD_REQUEST, "파일은 필수값입니다."),
+    FILE_COUNT_EXCEED("COMMON_400", HttpStatus.BAD_REQUEST, "업로드할 수 있는 파일 개수를 초과했습니다."),
     FILE_SIZE_EXCEED("COMMON_400", HttpStatus.BAD_REQUEST, "파일 크기가 허용 용량을 초과했습니다."),
     FILE_TYPE_INVALID("COMMON_400", HttpStatus.BAD_REQUEST, "업로드할 수 없는 파일 형식입니다."),
     FILE_UPLOAD_FAIL("COMMON_400", HttpStatus.BAD_REQUEST, "파일 업로드에 실패했습니다. 다시 시도해주세요."),
