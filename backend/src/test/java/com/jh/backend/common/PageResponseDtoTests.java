@@ -16,7 +16,7 @@ class PageResponseDtoTests {
     @DisplayName("페이지 응답은 명세의 필드명과 순서로 내려간다")
     void pageJson() {
         var page = new PageImpl<>(List.of(1, 2), PageRequest.of(0, 2), 5);
-        var dto = new PageResponseDto<>(page, List.of("a", "b"));
+        var dto = PageResponseDto.of(page, List.of("a", "b"));
 
         assertThat(JsonMapper.builder().build().writeValueAsString(CommonApiResponse.ok(dto))).isEqualTo(
                 "{\"isSuccess\":true,\"message\":\"success\",\"data\":{\"pageNumber\":0,\"pageSize\":2,"

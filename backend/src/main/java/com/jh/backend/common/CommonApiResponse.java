@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.jh.backend.exception.CustomException;
 import com.jh.backend.exception.ExceptionCode;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 
 @Getter
@@ -12,15 +13,20 @@ import lombok.Getter;
 @JsonPropertyOrder({"isSuccess", "code", "message", "data"})
 public class CommonApiResponse<T> {
 
+    @Schema(description = "성공 여부", example = "true")
     @JsonProperty("isSuccess")
     private final boolean success;
 
+    // 성공 응답에는 포함되지 않으므로 문서에서 제외 (에러 예시는 @ApiExceptionDocs로 작성)
+    @Schema(hidden = true)
     @JsonProperty("code")
     private final String code;
 
+    @Schema(description = "응답 메시지", example = "success")
     @JsonProperty("message")
     private final String message;
 
+    @Schema(description = "응답 데이터")
     @JsonProperty("data")
     private final T data;
 

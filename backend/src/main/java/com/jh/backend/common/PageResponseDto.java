@@ -2,6 +2,7 @@ package com.jh.backend.common;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import org.springframework.data.domain.Page;
 
@@ -19,30 +20,30 @@ import java.util.List;
 })
 public class PageResponseDto<T> {
 
-    // 현재 페이지 번호 (0부터 시작)
+    @Schema(description = "현재 페이지 번호 (0부터 시작)", example = "0")
     private final int pageNumber;
 
-    // 현재 페이지 크기
+    @Schema(description = "현재 페이지 크기", example = "10")
     private final int pageSize;
 
-    // 현재 페이지가 첫번째인지 여부
+    @Schema(description = "현재 페이지가 첫번째인지 여부", example = "true")
     @JsonProperty("isFirst")
     private final boolean first;
 
-    // 현재 페이지가 마지막인지 여부
+    @Schema(description = "현재 페이지가 마지막인지 여부", example = "true")
     @JsonProperty("isLast")
     private final boolean last;
 
-    // 총 페이지 수
+    @Schema(description = "총 페이지 수", example = "1")
     private final int totalPages;
 
-    // 총 데이터 수
+    @Schema(description = "총 데이터 수", example = "1")
     private final long totalElements;
 
-    // List 형태의 데이터
+    @Schema(description = "List 형태의 데이터")
     private final List<T> content;
 
-    public PageResponseDto(Page<?> page, List<T> content) {
+    private PageResponseDto(Page<?> page, List<T> content) {
         this.pageNumber = page.getNumber();
         this.pageSize = page.getSize();
         this.first = page.isFirst();
@@ -50,5 +51,9 @@ public class PageResponseDto<T> {
         this.totalPages = page.getTotalPages();
         this.totalElements = page.getTotalElements();
         this.content = content;
+    }
+
+    public static <T> PageResponseDto<T> of(Page<?> page, List<T> content) {
+        return new PageResponseDto<>(page, content);
     }
 }

@@ -1,6 +1,7 @@
 package com.jh.backend.exception;
 
 import com.jh.backend.common.CommonApiResponse;
+import com.jh.backend.common.annotation.AuthExceptionSwaggerDocs;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSourceResolvable;
@@ -165,7 +166,15 @@ public class GlobalExceptionHandler {
         return handle(ExceptionCode.FILE_UPLOAD_FAIL, ex, request);
     }
 
-    //  커스텀 오류 (인증, 인가 오류인 AuthException 포함)  //
+    //  403, 401  //
+    //  권한 관련 오류  //
+    @AuthExceptionSwaggerDocs
+    @ExceptionHandler(AuthException.class)
+    public ResponseEntity<CommonApiResponse<Object>> handleAuthException(AuthException ex, HttpServletRequest request) {
+        return handleCustomException(ex, request);
+    }
+
+    //  커스텀 오류  //
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<CommonApiResponse<Object>> handleCustomException(CustomException ex, HttpServletRequest request) {
         writeLog(ex.getExceptionCode(), ex, request);
