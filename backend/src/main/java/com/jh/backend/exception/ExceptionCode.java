@@ -16,7 +16,6 @@ public enum ExceptionCode {
     //500
     INTERNAL_SERVER_ERROR("COMMON_500", HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요."),
     REFLECTION_ACCESS_ERROR("COMMON_500", HttpStatus.INTERNAL_SERVER_ERROR, "객체 프로퍼티 접근 중 오류가 발생했습니다."),
-    VALIDATOR_PROPERTY_TYPE_MISMATCH("COMMON_500", HttpStatus.INTERNAL_SERVER_ERROR, "유효성 검증 대상 타입이 불일치합니다."),
 
     //429
     TOO_MANY_REQUESTS("COMMON_429", HttpStatus.TOO_MANY_REQUESTS, "요청이 너무 많습니다. 잠시 후 다시 시도해주세요."),
