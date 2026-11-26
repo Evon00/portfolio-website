@@ -1,6 +1,7 @@
 package com.jh.backend.util.file;
 
 import com.jh.backend.common.enums.MediaExt;
+import com.jh.backend.common.enums.StorageFolder;
 import com.jh.backend.common.properties.S3Properties;
 import com.jh.backend.exception.CustomException;
 import com.jh.backend.exception.ExceptionCode;

@@ -1,6 +1,5 @@
-package com.jh.backend.util.file;
+package com.jh.backend.common.enums;
 
-import com.jh.backend.common.enums.MediaExt;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
