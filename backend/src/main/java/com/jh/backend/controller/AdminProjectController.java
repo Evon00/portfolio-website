@@ -1,13 +1,17 @@
 package com.jh.backend.controller;
 
 import com.jh.backend.common.CommonApiResponse;
+import com.jh.backend.common.PageResponseDto;
+import com.jh.backend.dto.project.item.FindAllAdminProjectsItem;
 import com.jh.backend.dto.project.request.CheckProjectSlugRequestDto;
 import com.jh.backend.dto.project.request.CreateProjectRequestDto;
+import com.jh.backend.dto.project.request.FindAllAdminProjectsRequestDto;
 import com.jh.backend.dto.project.response.CheckProjectSlugResponseDto;
 import com.jh.backend.dto.project.response.CreateProjectResponseDto;
 import com.jh.backend.service.AdminProjectService;
 import com.jh.backend.swagger.project.CheckProjectSlugSwaggerDocs;
 import com.jh.backend.swagger.project.CreateProjectSwaggerDocs;
+import com.jh.backend.swagger.project.FindAllAdminProjectsSwaggerDocs;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -48,5 +52,13 @@ public class AdminProjectController {
             @Valid @RequestPart CreateProjectRequestDto data,
             @RequestPart(required = false) List<MultipartFile> files) {
         return ResponseEntity.ok(CommonApiResponse.ok(adminProjectService.createProject(data, files)));
+    }
+
+    // 관리자 프로젝트 목록 조회
+    @FindAllAdminProjectsSwaggerDocs
+    @GetMapping
+    public ResponseEntity<CommonApiResponse<PageResponseDto<FindAllAdminProjectsItem>>> findAllAdminProjects(
+            @Valid @ParameterObject FindAllAdminProjectsRequestDto dto) {
+        return ResponseEntity.ok(CommonApiResponse.ok(adminProjectService.findAllAdminProjects(dto)));
     }
 }

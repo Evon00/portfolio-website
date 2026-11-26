@@ -1,9 +1,13 @@
 package com.jh.backend.service.implement;
 
+import com.jh.backend.common.PageResponseDto;
 import com.jh.backend.common.enums.StorageFolder;
+import com.jh.backend.dto.project.item.FindAllAdminProjectsItem;
+import com.jh.backend.dto.project.item.ProjectSkillItem;
 import com.jh.backend.dto.project.item.CreateProjectMediaItem;
 import com.jh.backend.dto.project.request.CheckProjectSlugRequestDto;
 import com.jh.backend.dto.project.request.CreateProjectRequestDto;
+import com.jh.backend.dto.project.request.FindAllAdminProjectsRequestDto;
 import com.jh.backend.dto.project.response.CheckProjectSlugResponseDto;
 import com.jh.backend.dto.project.response.CreateProjectResponseDto;
 import com.jh.backend.entity.Admin;
@@ -15,6 +19,7 @@ import com.jh.backend.exception.CustomException;
 import com.jh.backend.exception.ExceptionCode;
 import com.jh.backend.repository.AdminRepository;
 import com.jh.backend.repository.ProjectMediaRepository;
+import com.jh.backend.repository.ProjectMediaRepository.ProjectMediaCount;
 import com.jh.backend.repository.ProjectRepository;
 import com.jh.backend.repository.ProjectSkillRepository;
 import com.jh.backend.service.AdminProjectService;
@@ -24,13 +29,18 @@ import com.jh.backend.util.login.LoginChecker;
 import com.jh.backend.util.skill.SkillReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Slf4j
@@ -39,6 +49,8 @@ import java.util.stream.IntStream;
 public class AdminProjectServiceImpl implements AdminProjectService {
 
     private static final int MAX_PROJECT_MEDIA_COUNT = 10;
+    private static final int DEFAULT_PAGE_NUMBER = 0;
+    private static final int DEFAULT_PAGE_SIZE = 10;
 
     private final AdminRepository adminRepository;
     private final ProjectRepository projectRepository;
@@ -165,6 +177,51 @@ public class AdminProjectServiceImpl implements AdminProjectService {
 
         // 10. 응답 DTO로 변환
         return CreateProjectResponseDto.fromEntity(project);
+    }
+
+    // 관리자 프로젝트 목록 조회
+    //      -> 검색, 정렬 조건 없음 (projectPriority 오름차순 고정)
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponseDto<FindAllAdminProjectsItem> findAllAdminProjects(FindAllAdminProjectsRequestDto dto) {
+
+        // 1. 페이지 조건 정리
+        //      -> 기본값 : pageNumber 0, pageSize 10
+        //      -> priority 오름차순, 같으면 PK 오름차순 (페이지 이동시 순서 고정)
+        PageRequest pageRequest = PageRequest.of(
+                dto.pageNumber() != null ? dto.pageNumber() : DEFAULT_PAGE_NUMBER,
+                dto.pageSize() != null ? dto.pageSize() : DEFAULT_PAGE_SIZE,
+                Sort.by(Sort.Order.asc("priority"), Sort.Order.asc("id")));
+
+        // 2. 프로젝트 페이지 조회 (count 쿼리 포함)
+        //      -> 삭제된 프로젝트 제외 (@SQLRestriction)
+        Page<Project> projects = projectRepository.findAll(pageRequest);
+        List<Long> projectIds = projects.map(Project::getId).toList();
+
+        // 3. 프로젝트 기술 스택 조회 (IN 쿼리 1번, N+1 방지)
+        //      -> 조회된 프로젝트가 없으면 생략
+        //      -> 프로젝트별 priority 오름차순
+        //      -> skillUrl은 s3 key를 공개 주소로 변환
+        Map<Long, List<ProjectSkillItem>> skillsByProjectId = projectIds.isEmpty() ? Map.of()
+                : projectSkillRepository.findAllByProjectIdIn(projectIds).stream()
+                        .collect(Collectors.groupingBy(projectSkill -> projectSkill.getProject().getId(),
+                                Collectors.mapping(projectSkill -> ProjectSkillItem.fromEntity(projectSkill, fileUtil.toUrl(projectSkill.getSkill().getS3Key())),
+                                        Collectors.toList())));
+
+        // 4. 프로젝트별 이미지 수 조회 (GROUP BY 쿼리 1번)
+        //      -> 조회된 프로젝트가 없으면 생략
+        //      -> 삭제된 이미지 제외 (@SQLRestriction), 이미지가 없으면 0
+        Map<Long, Long> mediaCountByProjectId = projectIds.isEmpty() ? Map.of()
+                : projectMediaRepository.countAllByProjectIdIn(projectIds).stream()
+                        .collect(Collectors.toMap(ProjectMediaCount::getProjectId, ProjectMediaCount::getMediaCount));
+
+        // 5. 응답 DTO로 변환
+        //      -> 범위를 넘은 페이지는 빈 목록
+        return PageResponseDto.of(projects, projects.stream()
+                .map(project -> FindAllAdminProjectsItem.fromEntity(project,
+                        mediaCountByProjectId.getOrDefault(project.getId(), 0L),
+                        skillsByProjectId.getOrDefault(project.getId(), List.of())))
+                .toList());
     }
 
     // 파일, 이미지 정보 검증

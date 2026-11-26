@@ -1,7 +1,10 @@
 package com.jh.backend.service;
 
+import com.jh.backend.common.PageResponseDto;
+import com.jh.backend.dto.project.item.FindAllAdminProjectsItem;
 import com.jh.backend.dto.project.request.CheckProjectSlugRequestDto;
 import com.jh.backend.dto.project.request.CreateProjectRequestDto;
+import com.jh.backend.dto.project.request.FindAllAdminProjectsRequestDto;
 import com.jh.backend.dto.project.response.CheckProjectSlugResponseDto;
 import com.jh.backend.dto.project.response.CreateProjectResponseDto;
 import org.springframework.web.multipart.MultipartFile;
@@ -15,4 +18,7 @@ public interface AdminProjectService {
 
     // 프로젝트 추가
     CreateProjectResponseDto createProject(CreateProjectRequestDto dto, List<MultipartFile> files);
+
+    // 관리자 프로젝트 목록 조회
+    PageResponseDto<FindAllAdminProjectsItem> findAllAdminProjects(FindAllAdminProjectsRequestDto dto);
 }
