@@ -1,6 +1,7 @@
 package com.jh.backend.service.implement;
 
 import com.jh.backend.common.enums.StorageFolder;
+import com.jh.backend.dto.skill.item.DeleteSkillItem;
 import com.jh.backend.dto.skill.item.FindAllSkillsItem;
 import com.jh.backend.dto.skill.request.CreateSkillRequestDto;
 import com.jh.backend.dto.skill.request.FindAllSkillsRequestDto;
@@ -12,6 +13,9 @@ import com.jh.backend.dto.skill.response.UpdateSkillResponseDto;
 import com.jh.backend.entity.Skill;
 import com.jh.backend.exception.CustomException;
 import com.jh.backend.exception.ExceptionCode;
+import com.jh.backend.repository.AdminSkillRepository;
+import com.jh.backend.repository.PostSkillRepository;
+import com.jh.backend.repository.ProjectSkillRepository;
 import com.jh.backend.repository.SkillRepository;
 import com.jh.backend.service.AdminSkillService;
 import com.jh.backend.util.file.FileUtil;
@@ -33,6 +37,9 @@ import java.util.Locale;
 public class AdminSkillServiceImpl implements AdminSkillService {
 
     private final SkillRepository skillRepository;
+    private final PostSkillRepository postSkillRepository;
+    private final ProjectSkillRepository projectSkillRepository;
+    private final AdminSkillRepository adminSkillRepository;
     private final FileUtil fileUtil;
 
     // 기술 스택 추가
@@ -166,6 +173,35 @@ public class AdminSkillServiceImpl implements AdminSkillService {
         // 6. 응답 DTO로 변환
         //      -> skillUrl은 s3 key를 공개 주소로 변환
         return UpdateSkillResponseDto.fromEntity(skill, fileUtil.toUrl(skill.getS3Key()));
+    }
+
+    // 기술 스택 삭제
+    @Override
+    @Transactional
+    public void deleteSkill(Long skillId) {
+
+        // 1. 기술 스택 존재 여부 확인
+        //      exc. 기술 스택 미존재 또는 이미 삭제된 경우 에러 처리 (SKILL_NOT_FOUND)
+        Skill skill = skillRepository.findById(skillId).orElseThrow(
+                () -> new CustomException(ExceptionCode.SKILL_NOT_FOUND));
+
+        // 2. 사용 여부 확인
+        //      -> 게시글 수, 프로젝트 수 : 삭제되지 않은 게시글, 프로젝트의 연결만 셈
+        //      -> 프로필 사용 여부 : 관리자 기술 스택 연결 존재 여부
+        //      exc. 하나라도 사용 중이면 에러 처리 (SKILL_IN_USE, data에 postCount, projectCount, profileUsed 포함)
+        DeleteSkillItem usage = new DeleteSkillItem(
+                postSkillRepository.countBySkillId(skillId),
+                projectSkillRepository.countBySkillId(skillId),
+                adminSkillRepository.existsBySkillId(skillId));
+        if (usage.isInUse()) {
+            throw new CustomException(ExceptionCode.SKILL_IN_USE, usage);
+        }
+
+        // 3. soft delete (deleted_at 기록)
+        //      -> S3 아이콘 파일은 삭제하지 않음
+        //      -> 삭제 로그 기록 (skillId)
+        skill.delete();
+        log.info("기술 스택 삭제 - skillId = {}", skillId);
     }
 
     // LIKE 검색의 특수문자(\, %, _)를 글자 그대로 검색되도록 escape

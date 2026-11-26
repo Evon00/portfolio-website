@@ -22,4 +22,7 @@ public interface AdminSkillService {
 
     // 기술 스택 수정
     UpdateSkillResponseDto updateSkill(Long skillId, UpdateSkillRequestDto dto, MultipartFile file);
+
+    // 기술 스택 삭제
+    void deleteSkill(Long skillId);
 }

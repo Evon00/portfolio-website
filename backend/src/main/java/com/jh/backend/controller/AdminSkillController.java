@@ -10,6 +10,7 @@ import com.jh.backend.dto.skill.response.FindAllSkillsResponseDto;
 import com.jh.backend.dto.skill.response.UpdateSkillResponseDto;
 import com.jh.backend.service.AdminSkillService;
 import com.jh.backend.swagger.skill.CreateSkillSwaggerDocs;
+import com.jh.backend.swagger.skill.DeleteSkillSwaggerDocs;
 import com.jh.backend.swagger.skill.FindAllSkillCategoriesSwaggerDocs;
 import com.jh.backend.swagger.skill.FindAllSkillsSwaggerDocs;
 import com.jh.backend.swagger.skill.UpdateSkillSwaggerDocs;
@@ -21,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -72,5 +74,15 @@ public class AdminSkillController {
             @Valid @RequestPart UpdateSkillRequestDto data,
             @RequestPart(required = false) MultipartFile file) {
         return ResponseEntity.ok(CommonApiResponse.ok(adminSkillService.updateSkill(skillId, data, file)));
+    }
+
+    // 기술 스택 삭제
+    @DeleteSkillSwaggerDocs
+    @DeleteMapping("/{skillId}")
+    public ResponseEntity<CommonApiResponse<Void>> deleteSkill(
+            @Positive(message = "기술 스택 PK는 0보다 큰 양수여야 합니다.")
+            @PathVariable Long skillId) {
+        adminSkillService.deleteSkill(skillId);
+        return ResponseEntity.ok(CommonApiResponse.ok());
     }
 }
