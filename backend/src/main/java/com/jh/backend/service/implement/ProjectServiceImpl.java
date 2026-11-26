@@ -2,9 +2,13 @@ package com.jh.backend.service.implement;
 
 import com.jh.backend.common.PageResponseDto;
 import com.jh.backend.dto.project.item.FindAllProjectsItem;
+import com.jh.backend.dto.project.item.FindProjectBySlugMediaItem;
 import com.jh.backend.dto.project.item.ProjectSkillItem;
 import com.jh.backend.dto.project.request.FindAllProjectsRequestDto;
+import com.jh.backend.dto.project.response.FindProjectBySlugResponseDto;
 import com.jh.backend.entity.Project;
+import com.jh.backend.exception.CustomException;
+import com.jh.backend.exception.ExceptionCode;
 import com.jh.backend.repository.ProjectMediaRepository;
 import com.jh.backend.repository.ProjectRepository;
 import com.jh.backend.service.ProjectService;
@@ -75,5 +79,36 @@ public class ProjectServiceImpl implements ProjectService {
                         mediaUrlByProjectId.get(project.getId()),
                         skillsByProjectId.getOrDefault(project.getId(), List.of())))
                 .toList());
+    }
+
+    // 프로젝트 상세 조회 (슬러그, 인증 불필요)
+    //      -> 슬러그 형식 검증 없음 (형식이 틀리면 프로젝트가 없으므로 404)
+    //      -> 조회수 없음
+    @Override
+    @Transactional(readOnly = true)
+    public FindProjectBySlugResponseDto findProjectBySlug(String projectSlug) {
+
+        // 1. 프로젝트 조회
+        //      -> 삭제된 프로젝트 제외 (@SQLRestriction)
+        //      exc. 프로젝트 미존재 또는 삭제된 경우 에러 처리 (PROJECT_NOT_FOUND, 404)
+        Project project = projectRepository.findBySlug(projectSlug).orElseThrow(
+                () -> new CustomException(ExceptionCode.PROJECT_NOT_FOUND));
+
+        // 2. 프로젝트 기술 스택 조회 (ProjectReader 재사용)
+        //      -> priority 오름차순, skillUrl은 공개 주소로 변환
+        List<ProjectSkillItem> skills = projectReader.readSkillsByProjectId(List.of(project.getId()))
+                .getOrDefault(project.getId(), List.of());
+
+        // 3. 프로젝트 이미지 조회 (findAllByProjectIdOrderByPriorityAscIdAsc 재사용)
+        //      -> 삭제된 이미지 제외 (@SQLRestriction), priority 오름차순
+        //      -> projectMediaUrl은 s3 key를 공개 주소로 변환
+        //      -> 원본 파일명, 크기는 응답하지 않음 (관리자 상세에서만 제공)
+        List<FindProjectBySlugMediaItem> projectMedias = projectMediaRepository.findAllByProjectIdOrderByPriorityAscIdAsc(project.getId()).stream()
+                .map(media -> FindProjectBySlugMediaItem.fromEntity(media, fileUtil.toUrl(media.getS3Key())))
+                .toList();
+
+        // 4. 응답 DTO로 변환
+        //      -> 본문은 저장된 원문 그대로 응답
+        return FindProjectBySlugResponseDto.fromEntity(project, skills, projectMedias);
     }
 }
