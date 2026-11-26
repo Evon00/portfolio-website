@@ -4,9 +4,11 @@ import com.jh.backend.common.CommonApiResponse;
 import com.jh.backend.dto.skill.request.CreateSkillRequestDto;
 import com.jh.backend.dto.skill.request.FindAllSkillsRequestDto;
 import com.jh.backend.dto.skill.response.CreateSkillResponseDto;
+import com.jh.backend.dto.skill.response.FindAllSkillCategoriesResponseDto;
 import com.jh.backend.dto.skill.response.FindAllSkillsResponseDto;
 import com.jh.backend.service.AdminSkillService;
 import com.jh.backend.swagger.skill.CreateSkillSwaggerDocs;
+import com.jh.backend.swagger.skill.FindAllSkillCategoriesSwaggerDocs;
 import com.jh.backend.swagger.skill.FindAllSkillsSwaggerDocs;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -46,5 +48,12 @@ public class AdminSkillController {
     public ResponseEntity<CommonApiResponse<FindAllSkillsResponseDto>> findAllSkills(
             @Valid @ParameterObject FindAllSkillsRequestDto dto) {
         return ResponseEntity.ok(CommonApiResponse.ok(adminSkillService.findAllSkills(dto)));
+    }
+
+    // 기술 스택 카테고리 목록 조회
+    @FindAllSkillCategoriesSwaggerDocs
+    @GetMapping("/category")
+    public ResponseEntity<CommonApiResponse<FindAllSkillCategoriesResponseDto>> findAllSkillCategories() {
+        return ResponseEntity.ok(CommonApiResponse.ok(adminSkillService.findAllSkillCategories()));
     }
 }

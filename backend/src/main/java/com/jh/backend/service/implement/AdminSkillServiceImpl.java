@@ -5,6 +5,7 @@ import com.jh.backend.dto.skill.item.FindAllSkillsItem;
 import com.jh.backend.dto.skill.request.CreateSkillRequestDto;
 import com.jh.backend.dto.skill.request.FindAllSkillsRequestDto;
 import com.jh.backend.dto.skill.response.CreateSkillResponseDto;
+import com.jh.backend.dto.skill.response.FindAllSkillCategoriesResponseDto;
 import com.jh.backend.dto.skill.response.FindAllSkillsResponseDto;
 import com.jh.backend.entity.Skill;
 import com.jh.backend.exception.CustomException;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
@@ -96,6 +98,27 @@ public class AdminSkillServiceImpl implements AdminSkillService {
         return FindAllSkillsResponseDto.from(skills.stream()
                 .map(skill -> FindAllSkillsItem.fromEntity(skill, fileUtil.toUrl(skill.getS3Key())))
                 .toList());
+    }
+
+    // 기술 스택 카테고리 목록 조회
+    @Override
+    @Transactional(readOnly = true)
+    public FindAllSkillCategoriesResponseDto findAllSkillCategories() {
+
+        // 1. 카테고리 목록 조회 (중복 제거)
+        //      -> 삭제된 기술 스택의 카테고리는 제외 (@SQLRestriction)
+        //      -> 대소문자만 다른 카테고리는 각각 표시 (목록 조회의 카테고리 필터와 같은 기준)
+        List<String> categories = skillRepository.findAllCategories();
+
+        // 2. 알파벳 오름차순 정렬 (대소문자 무시)
+        //      -> DB collation과 관계없이 같은 순서가 되도록 Java에서 정렬
+        //      -> 대소문자만 다른 값은 원래 문자열 순서로 정렬
+        List<String> sorted = categories.stream()
+                .sorted(String.CASE_INSENSITIVE_ORDER.thenComparing(Comparator.naturalOrder()))
+                .toList();
+
+        // 3. 응답 DTO로 변환
+        return new FindAllSkillCategoriesResponseDto(sorted);
     }
 
     // LIKE 검색의 특수문자(\, %, _)를 글자 그대로 검색되도록 escape

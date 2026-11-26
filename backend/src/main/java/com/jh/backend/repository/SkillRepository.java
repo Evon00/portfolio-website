@@ -19,4 +19,8 @@ public interface SkillRepository extends JpaRepository<Skill, Long> {
             ORDER BY s.createdAt DESC, s.id DESC
             """)
     List<Skill> findAllBySearch(@Param("category") String category, @Param("namePattern") String namePattern);
+
+    // 카테고리 목록 (중복 제거, 정렬은 서비스에서 처리)
+    @Query("SELECT DISTINCT s.category FROM Skill s")
+    List<String> findAllCategories();
 }
