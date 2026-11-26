@@ -1,7 +1,10 @@
 package com.jh.backend.service;
 
 import com.jh.backend.dto.post.request.CheckPostSlugRequestDto;
+import com.jh.backend.common.PageResponseDto;
+import com.jh.backend.dto.post.item.FindAllAdminPostsItem;
 import com.jh.backend.dto.post.request.CreatePostRequestDto;
+import com.jh.backend.dto.post.request.FindAllAdminPostsRequestDto;
 import com.jh.backend.dto.post.response.CheckPostSlugResponseDto;
 import com.jh.backend.dto.post.response.CreatePostResponseDto;
 import com.jh.backend.dto.post.response.UploadPostImageResponseDto;
@@ -17,4 +20,7 @@ public interface AdminPostService {
 
     // 게시글 추가
     CreatePostResponseDto createPost(CreatePostRequestDto dto);
+
+    // 관리자 게시글 목록 조회
+    PageResponseDto<FindAllAdminPostsItem> findAllAdminPosts(FindAllAdminPostsRequestDto dto);
 }

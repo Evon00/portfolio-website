@@ -1,14 +1,18 @@
 package com.jh.backend.controller;
 
 import com.jh.backend.common.CommonApiResponse;
+import com.jh.backend.common.PageResponseDto;
+import com.jh.backend.dto.post.item.FindAllAdminPostsItem;
 import com.jh.backend.dto.post.request.CheckPostSlugRequestDto;
 import com.jh.backend.dto.post.request.CreatePostRequestDto;
+import com.jh.backend.dto.post.request.FindAllAdminPostsRequestDto;
 import com.jh.backend.dto.post.response.CheckPostSlugResponseDto;
 import com.jh.backend.dto.post.response.CreatePostResponseDto;
 import com.jh.backend.dto.post.response.UploadPostImageResponseDto;
 import com.jh.backend.service.AdminPostService;
 import com.jh.backend.swagger.post.CheckPostSlugSwaggerDocs;
 import com.jh.backend.swagger.post.CreatePostSwaggerDocs;
+import com.jh.backend.swagger.post.FindAllAdminPostsSwaggerDocs;
 import com.jh.backend.swagger.post.UploadPostImageSwaggerDocs;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -56,5 +60,13 @@ public class AdminPostController {
     public ResponseEntity<CommonApiResponse<CreatePostResponseDto>> createPost(
             @Valid @RequestBody CreatePostRequestDto dto) {
         return ResponseEntity.ok(CommonApiResponse.ok(adminPostService.createPost(dto)));
+    }
+
+    // 관리자 게시글 목록 조회
+    @FindAllAdminPostsSwaggerDocs
+    @GetMapping
+    public ResponseEntity<CommonApiResponse<PageResponseDto<FindAllAdminPostsItem>>> findAllAdminPosts(
+            @Valid @ParameterObject FindAllAdminPostsRequestDto dto) {
+        return ResponseEntity.ok(CommonApiResponse.ok(adminPostService.findAllAdminPosts(dto)));
     }
 }
