@@ -66,6 +66,7 @@ public enum ExceptionCode {
 
     //ADMIN
     ADMIN_LOGIN_FAILED("ADMIN_001", HttpStatus.BAD_REQUEST, "아이디 또는 비밀번호가 일치하지 않습니다."),
+    ADMIN_NOT_FOUND("ADMIN_002", HttpStatus.NOT_FOUND, "관리자 정보를 찾을 수 없습니다."),
 
     //POST
     POST_NOT_FOUND("POST_001", HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다."),

@@ -1,5 +1,6 @@
 package com.jh.backend.service.implement;
 
+import com.jh.backend.common.CacheNames;
 import com.jh.backend.common.enums.StorageFolder;
 import com.jh.backend.dto.skill.item.DeleteSkillItem;
 import com.jh.backend.dto.skill.item.FindAllSkillsItem;
@@ -22,6 +23,7 @@ import com.jh.backend.util.file.FileUtil;
 import com.jh.backend.util.file.UploadedFile;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -131,8 +133,10 @@ public class AdminSkillServiceImpl implements AdminSkillService {
     }
 
     // 기술 스택 수정
+    //      -> 프로필의 핵심 기술 스택에 표시되므로 커밋 후 프로필 캐시 삭제
     @Override
     @Transactional
+    @CacheEvict(cacheNames = CacheNames.PROFILE, allEntries = true)
     public UpdateSkillResponseDto updateSkill(Long skillId, UpdateSkillRequestDto dto, MultipartFile file) {
 
         // 1. 기술 스택 존재 여부 확인
