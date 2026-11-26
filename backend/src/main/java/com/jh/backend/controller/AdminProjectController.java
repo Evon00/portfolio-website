@@ -6,16 +6,19 @@ import com.jh.backend.dto.project.item.FindAllAdminProjectsItem;
 import com.jh.backend.dto.project.request.CheckProjectSlugRequestDto;
 import com.jh.backend.dto.project.request.CreateProjectRequestDto;
 import com.jh.backend.dto.project.request.FindAllAdminProjectsRequestDto;
+import com.jh.backend.dto.project.request.UpdateProjectPriorityRequestDto;
 import com.jh.backend.dto.project.request.UpdateProjectRequestDto;
 import com.jh.backend.dto.project.response.CheckProjectSlugResponseDto;
 import com.jh.backend.dto.project.response.CreateProjectResponseDto;
 import com.jh.backend.dto.project.response.FindProjectResponseDto;
+import com.jh.backend.dto.project.response.UpdateProjectPriorityResponseDto;
 import com.jh.backend.dto.project.response.UpdateProjectResponseDto;
 import com.jh.backend.service.AdminProjectService;
 import com.jh.backend.swagger.project.CheckProjectSlugSwaggerDocs;
 import com.jh.backend.swagger.project.CreateProjectSwaggerDocs;
 import com.jh.backend.swagger.project.FindAllAdminProjectsSwaggerDocs;
 import com.jh.backend.swagger.project.FindProjectSwaggerDocs;
+import com.jh.backend.swagger.project.UpdateProjectPrioritySwaggerDocs;
 import com.jh.backend.swagger.project.UpdateProjectSwaggerDocs;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -29,6 +32,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
@@ -88,5 +92,15 @@ public class AdminProjectController {
             @Valid @RequestPart UpdateProjectRequestDto data,
             @RequestPart(required = false) List<MultipartFile> files) {
         return ResponseEntity.ok(CommonApiResponse.ok(adminProjectService.updateProject(projectId, data, files)));
+    }
+
+    // 프로젝트 순서 변경
+    @UpdateProjectPrioritySwaggerDocs
+    @PatchMapping("/{projectId}/priority")
+    public ResponseEntity<CommonApiResponse<UpdateProjectPriorityResponseDto>> updateProjectPriority(
+            @Positive(message = "프로젝트 PK는 0보다 큰 양수여야 합니다.")
+            @PathVariable Long projectId,
+            @Valid @RequestBody UpdateProjectPriorityRequestDto dto) {
+        return ResponseEntity.ok(CommonApiResponse.ok(adminProjectService.updateProjectPriority(projectId, dto)));
     }
 }

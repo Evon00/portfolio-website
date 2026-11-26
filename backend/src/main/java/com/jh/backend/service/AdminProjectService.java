@@ -5,10 +5,12 @@ import com.jh.backend.dto.project.item.FindAllAdminProjectsItem;
 import com.jh.backend.dto.project.request.CheckProjectSlugRequestDto;
 import com.jh.backend.dto.project.request.CreateProjectRequestDto;
 import com.jh.backend.dto.project.request.FindAllAdminProjectsRequestDto;
+import com.jh.backend.dto.project.request.UpdateProjectPriorityRequestDto;
 import com.jh.backend.dto.project.request.UpdateProjectRequestDto;
 import com.jh.backend.dto.project.response.CheckProjectSlugResponseDto;
 import com.jh.backend.dto.project.response.CreateProjectResponseDto;
 import com.jh.backend.dto.project.response.FindProjectResponseDto;
+import com.jh.backend.dto.project.response.UpdateProjectPriorityResponseDto;
 import com.jh.backend.dto.project.response.UpdateProjectResponseDto;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -30,4 +32,7 @@ public interface AdminProjectService {
 
     // 프로젝트 수정
     UpdateProjectResponseDto updateProject(Long projectId, UpdateProjectRequestDto dto, List<MultipartFile> files);
+
+    // 프로젝트 순서 변경
+    UpdateProjectPriorityResponseDto updateProjectPriority(Long projectId, UpdateProjectPriorityRequestDto dto);
 }

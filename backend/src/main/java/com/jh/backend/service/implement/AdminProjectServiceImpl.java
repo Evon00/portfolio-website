@@ -10,10 +10,12 @@ import com.jh.backend.dto.project.item.CreateProjectMediaItem;
 import com.jh.backend.dto.project.request.CheckProjectSlugRequestDto;
 import com.jh.backend.dto.project.request.CreateProjectRequestDto;
 import com.jh.backend.dto.project.request.FindAllAdminProjectsRequestDto;
+import com.jh.backend.dto.project.request.UpdateProjectPriorityRequestDto;
 import com.jh.backend.dto.project.request.UpdateProjectRequestDto;
 import com.jh.backend.dto.project.response.CheckProjectSlugResponseDto;
 import com.jh.backend.dto.project.response.CreateProjectResponseDto;
 import com.jh.backend.dto.project.response.FindProjectResponseDto;
+import com.jh.backend.dto.project.response.UpdateProjectPriorityResponseDto;
 import com.jh.backend.dto.project.response.UpdateProjectResponseDto;
 import com.jh.backend.entity.Admin;
 import com.jh.backend.entity.Project;
@@ -413,6 +415,53 @@ public class AdminProjectServiceImpl implements AdminProjectService {
 
         // 10. 응답 DTO로 변환
         return UpdateProjectResponseDto.fromEntity(project);
+    }
+
+    // 프로젝트 순서 변경
+    //      -> 위치는 전체 목록 기준 (페이지와 무관)
+    //      -> 경로 변수 projectId는 컨트롤러에서 @Positive 검증, projectPriority 1 미만·null은 DTO에서 400
+    //      -> 관리자 1명 가정 (락 없음)
+    @Override
+    @Transactional
+    public UpdateProjectPriorityResponseDto updateProjectPriority(Long projectId, UpdateProjectPriorityRequestDto dto) {
+
+        // 1. 삭제되지 않은 프로젝트 전체 조회
+        //      -> priority 오름차순, 같으면 PK 오름차순 (관리자 목록과 같은 순서)
+        List<Project> projects = new ArrayList<>(projectRepository.findAllByOrderByPriorityAscIdAsc());
+
+        // 2. 대상 프로젝트 찾기
+        //      exc. 목록에 없으면 (미존재 또는 삭제) 에러 처리 (PROJECT_NOT_FOUND, 404)
+        Project project = projects.stream()
+                .filter(p -> p.getId().equals(projectId))
+                .findFirst()
+                .orElseThrow(() -> new CustomException(ExceptionCode.PROJECT_NOT_FOUND));
+
+        // 3. 위치 범위 확인
+        //      exc. projectPriority가 프로젝트 수보다 크면 에러 처리 (PROJECT_PRIORITY_OUT_OF_RANGE, 400)
+        if (dto.projectPriority() > projects.size()) {
+            throw new CustomException(ExceptionCode.PROJECT_PRIORITY_OUT_OF_RANGE);
+        }
+
+        // 4. 대상을 목록에서 빼서 projectPriority - 1 위치에 넣기
+        //      -> 사이에 있는 프로젝트는 한 칸씩 밀리거나 당겨짐
+        projects.remove(project);
+        projects.add(dto.projectPriority() - 1, project);
+
+        // 5. 1부터 다시 번호 매기기 (변경 감지, Project.changePriority)
+        //      -> 값이 바뀐 프로젝트만 UPDATE
+        //      -> 삭제로 생긴 빈 번호, 중복 번호도 함께 정리
+        //      -> priority는 유니크 제약이 없어 UPDATE 순서와 무관
+        for (int i = 0; i < projects.size(); i++) {
+            if (!Objects.equals(projects.get(i).getPriority(), i + 1)) {
+                projects.get(i).changePriority(i + 1);
+            }
+        }
+
+        // 6. 순서 변경 로그 기록 (projectId, priority)
+        log.info("프로젝트 순서 변경 - projectId = {}, priority = {}", project.getId(), project.getPriority());
+
+        // 7. 응답 DTO로 변환
+        return UpdateProjectPriorityResponseDto.fromEntity(project);
     }
 
     // 수정시 최종 이미지 정보 검증
