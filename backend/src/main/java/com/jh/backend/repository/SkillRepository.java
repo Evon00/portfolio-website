@@ -11,6 +11,8 @@ public interface SkillRepository extends JpaRepository<Skill, Long> {
 
     boolean existsByNameIgnoreCase(String name);
 
+    boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
+
     // 카테고리(정확히 일치), 이름 검색 패턴(소문자, escape 처리된 LIKE 패턴)으로 조회 - null이면 조건 제외
     @Query("""
             SELECT s FROM Skill s

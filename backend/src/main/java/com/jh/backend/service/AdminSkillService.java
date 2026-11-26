@@ -2,9 +2,11 @@ package com.jh.backend.service;
 
 import com.jh.backend.dto.skill.request.CreateSkillRequestDto;
 import com.jh.backend.dto.skill.request.FindAllSkillsRequestDto;
+import com.jh.backend.dto.skill.request.UpdateSkillRequestDto;
 import com.jh.backend.dto.skill.response.CreateSkillResponseDto;
 import com.jh.backend.dto.skill.response.FindAllSkillCategoriesResponseDto;
 import com.jh.backend.dto.skill.response.FindAllSkillsResponseDto;
+import com.jh.backend.dto.skill.response.UpdateSkillResponseDto;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface AdminSkillService {
@@ -17,4 +19,7 @@ public interface AdminSkillService {
 
     // 기술 스택 카테고리 목록 조회
     FindAllSkillCategoriesResponseDto findAllSkillCategories();
+
+    // 기술 스택 수정
+    UpdateSkillResponseDto updateSkill(Long skillId, UpdateSkillRequestDto dto, MultipartFile file);
 }

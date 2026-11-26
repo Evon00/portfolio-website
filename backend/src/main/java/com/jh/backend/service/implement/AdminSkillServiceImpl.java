@@ -4,9 +4,11 @@ import com.jh.backend.common.enums.StorageFolder;
 import com.jh.backend.dto.skill.item.FindAllSkillsItem;
 import com.jh.backend.dto.skill.request.CreateSkillRequestDto;
 import com.jh.backend.dto.skill.request.FindAllSkillsRequestDto;
+import com.jh.backend.dto.skill.request.UpdateSkillRequestDto;
 import com.jh.backend.dto.skill.response.CreateSkillResponseDto;
 import com.jh.backend.dto.skill.response.FindAllSkillCategoriesResponseDto;
 import com.jh.backend.dto.skill.response.FindAllSkillsResponseDto;
+import com.jh.backend.dto.skill.response.UpdateSkillResponseDto;
 import com.jh.backend.entity.Skill;
 import com.jh.backend.exception.CustomException;
 import com.jh.backend.exception.ExceptionCode;
@@ -119,6 +121,51 @@ public class AdminSkillServiceImpl implements AdminSkillService {
 
         // 3. 응답 DTO로 변환
         return new FindAllSkillCategoriesResponseDto(sorted);
+    }
+
+    // 기술 스택 수정
+    @Override
+    @Transactional
+    public UpdateSkillResponseDto updateSkill(Long skillId, UpdateSkillRequestDto dto, MultipartFile file) {
+
+        // 1. 기술 스택 존재 여부 확인
+        //      exc. 기술 스택 미존재시 에러 처리 (SKILL_NOT_FOUND)
+        Skill skill = skillRepository.findById(skillId).orElseThrow(
+                () -> new CustomException(ExceptionCode.SKILL_NOT_FOUND));
+
+        // 2. 이름, 카테고리 앞뒤 공백 제거
+        //      -> 카테고리는 입력값 그대로 저장 (기존 카테고리 표기로 맞추지 않음)
+        String name = dto.skillName().strip();
+        String category = dto.skillCategory().strip();
+
+        // 3. 이름 중복 확인 (자기 자신 제외, 대소문자 무시)
+        //      exc. 다른 기술 스택과 이름 중복시 에러 처리 (SKILL_NAME_DUPLICATED)
+        //      -> 자기 이름의 대소문자만 바꾸는 것은 허용
+        //      -> 중복 확인을 업로드보다 먼저 하여 불필요한 S3 업로드 방지
+        if (skillRepository.existsByNameIgnoreCaseAndIdNot(name, skillId)) {
+            throw new CustomException(ExceptionCode.SKILL_NAME_DUPLICATED);
+        }
+
+        // 4. 아이콘 교체
+        //      -> 파일이 없거나 빈 파일이면 기존 아이콘 유지
+        //      exc. 용량 초과, 허용하지 않는 형식이면 에러 처리 (FileUtil에서 검증)
+        //      -> 새 파일은 롤백되면 S3에서 삭제
+        //      -> 기존 파일은 커밋 이후 S3에서 삭제
+        if (file != null && !file.isEmpty()) {
+            String oldS3Key = skill.getS3Key();
+            UploadedFile icon = fileUtil.upload(file, StorageFolder.SKILL);
+            skill.updateIcon(icon.originalName(), icon.s3Key(), icon.size(), icon.ext());
+            fileUtil.delete(oldS3Key);
+        }
+
+        // 5. 이름, 카테고리 수정 (변경 감지)
+        //      -> 수정 로그 기록 (skillId)
+        skill.update(name, category);
+        log.info("기술 스택 수정 - skillId = {}", skillId);
+
+        // 6. 응답 DTO로 변환
+        //      -> skillUrl은 s3 key를 공개 주소로 변환
+        return UpdateSkillResponseDto.fromEntity(skill, fileUtil.toUrl(skill.getS3Key()));
     }
 
     // LIKE 검색의 특수문자(\, %, _)를 글자 그대로 검색되도록 escape
