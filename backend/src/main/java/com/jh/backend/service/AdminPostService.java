@@ -7,7 +7,9 @@ import com.jh.backend.dto.post.request.CreatePostRequestDto;
 import com.jh.backend.dto.post.request.FindAllAdminPostsRequestDto;
 import com.jh.backend.dto.post.response.CheckPostSlugResponseDto;
 import com.jh.backend.dto.post.response.CreatePostResponseDto;
+import com.jh.backend.dto.post.request.UpdatePostRequestDto;
 import com.jh.backend.dto.post.response.FindPostResponseDto;
+import com.jh.backend.dto.post.response.UpdatePostResponseDto;
 import com.jh.backend.dto.post.response.UploadPostImageResponseDto;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,4 +29,7 @@ public interface AdminPostService {
 
     // 게시글 상세 조회 (수정용)
     FindPostResponseDto findPost(Long postId);
+
+    // 게시글 수정
+    UpdatePostResponseDto updatePost(Long postId, UpdatePostRequestDto dto);
 }

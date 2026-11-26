@@ -2,6 +2,7 @@ package com.jh.backend.repository;
 
 import com.jh.backend.entity.PostSkill;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -26,4 +27,9 @@ public interface PostSkillRepository extends JpaRepository<PostSkill, Long> {
             ORDER BY ps.post.id ASC, ps.priority ASC
             """)
     List<PostSkill> findAllByPostIdIn(@Param("postIds") Collection<Long> postIds);
+
+    // 게시글의 기술 스택 일괄 삭제 (바로 실행되어 다시 저장해도 유니크 제약 위반 없음)
+    @Modifying
+    @Query("DELETE FROM PostSkill ps WHERE ps.post.id = :postId")
+    void deleteAllByPostId(@Param("postId") Long postId);
 }

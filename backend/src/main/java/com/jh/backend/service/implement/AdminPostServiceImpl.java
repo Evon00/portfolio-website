@@ -14,7 +14,9 @@ import com.jh.backend.dto.post.request.CreatePostRequestDto;
 import com.jh.backend.dto.post.request.FindAllAdminPostsRequestDto;
 import com.jh.backend.dto.post.response.CheckPostSlugResponseDto;
 import com.jh.backend.dto.post.response.CreatePostResponseDto;
+import com.jh.backend.dto.post.request.UpdatePostRequestDto;
 import com.jh.backend.dto.post.response.FindPostResponseDto;
+import com.jh.backend.dto.post.response.UpdatePostResponseDto;
 import com.jh.backend.dto.post.response.UploadPostImageResponseDto;
 import com.jh.backend.entity.Admin;
 import com.jh.backend.entity.Post;
@@ -49,6 +51,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -144,22 +148,13 @@ public class AdminPostServiceImpl implements AdminPostService {
         // 4. 게시글 이미지 조회 (postMediaIds가 null이면 빈 목록)
         //      exc. 중복 ID가 있으면 에러 처리 (POST_MEDIA_DUPLICATED, 400)
         //      exc. 존재하지 않거나 삭제됐거나 이미 다른 게시글에 연결된 이미지가 있으면 에러 처리 (POST_MEDIA_INVALID, 400, data에 해당 ID 목록)
-        List<PostMedia> postMedias = readUnlinkedPostMedias(dto.postMediaIds() != null ? dto.postMediaIds() : List.of());
+        List<PostMedia> postMedias = readLinkablePostMedias(dto.postMediaIds() != null ? dto.postMediaIds() : List.of(), null);
 
         // 5. 본문 이미지 분석 (MarkdownImageExtractor)
         //      -> 본문의 ![alt](url), <img src alt>를 나온 순서대로 추출
         //      -> 썸네일 : 요청 이미지의 공개 URL과 처음 일치하는 이미지의 s3 key (없으면 null, 외부 URL 제외)
         //      -> 캡션 : 각 이미지가 본문에 처음 나온 곳의 alt (빈 값이면 null, 50자 초과시 자름, 본문에 없으면 null)
-        Map<String, PostMedia> mediaByUrl = postMedias.stream()
-                .collect(Collectors.toMap(media -> fileUtil.toUrl(media.getS3Key()), Function.identity()));
-        String thumbnailS3Key = null;
-        Map<Long, String> captions = new HashMap<>();
-        for (MarkdownImage image : markdownImageExtractor.extract(dto.postContent())) {
-            PostMedia media = mediaByUrl.get(image.url());
-            if (media == null) continue;
-            if (thumbnailS3Key == null) thumbnailS3Key = media.getS3Key();
-            captions.putIfAbsent(media.getId(), toCaption(image.alt()));
-        }
+        ImageAnalysis analysis = analyzeImages(dto.postContent(), postMedias);
 
         // 6. 게시글 저장
         //      -> 조회수 0, 수정일자 null로 저장
@@ -169,7 +164,7 @@ public class AdminPostServiceImpl implements AdminPostService {
                 .summary(dto.postSummary())
                 .content(dto.postContent())
                 .slug(dto.postSlug())
-                .thumbnailS3Key(thumbnailS3Key)
+                .thumbnailS3Key(analysis.thumbnailS3Key())
                 .build());
 
         // 7. 게시글 기술 스택 저장 (saveAll)
@@ -185,7 +180,7 @@ public class AdminPostServiceImpl implements AdminPostService {
         // 8. 게시글 이미지 연결 (PostMedia.linkPost, 변경 감지)
         //      -> 게시글, 캡션 저장
         //      -> 추가 로그 기록 (postId)
-        postMedias.forEach(media -> media.linkPost(post, captions.get(media.getId())));
+        postMedias.forEach(media -> media.linkPost(post, analysis.captions().get(media.getId())));
         log.info("게시글 추가 - postId = {}", post.getId());
 
         // 9. 응답 DTO로 변환
@@ -276,22 +271,135 @@ public class AdminPostServiceImpl implements AdminPostService {
         return FindPostResponseDto.fromEntity(post, skills, postMedias);
     }
 
-    // 게시글에 연결되지 않은 이미지 조회 (요청 순서 유지)
+    // 게시글 수정 (PATCH)
+    //      -> 보낸 필드만 수정, null이면 기존 값 유지 (빈 값, 빈 skillIds는 DTO에서 400)
+    //      -> 슬러그는 수정 불가, 조회수는 변경하지 않음
+    //      -> 경로 변수 postId는 컨트롤러에서 @Positive 검증 (0 이하면 400)
+    @Override
+    @Transactional
+    public UpdatePostResponseDto updatePost(Long postId, UpdatePostRequestDto dto) {
+
+        // 1. 게시글 조회
+        //      -> 삭제된 게시글 제외 (@SQLRestriction)
+        //      exc. 게시글 미존재시 에러 처리 (POST_NOT_FOUND, 404)
+        Post post = postRepository.findById(postId).orElseThrow(
+                () -> new CustomException(ExceptionCode.POST_NOT_FOUND));
+
+        // 2. 최종 제목, 요약, 본문 결정
+        //      -> null이면 기존 값, 보낸 값이 있으면 그 값
+        String title = dto.postTitle() != null ? dto.postTitle() : post.getTitle();
+        String summary = dto.postSummary() != null ? dto.postSummary() : post.getSummary();
+        String content = dto.postContent() != null ? dto.postContent() : post.getContent();
+        boolean contentChanged = !content.equals(post.getContent());
+        boolean changed = contentChanged || !title.equals(post.getTitle()) || !summary.equals(post.getSummary());
+
+        // 3. 기술 스택 변경 (skillIds를 보낸 경우만)
+        //      -> SkillReader로 조회 (요청 순서 유지)
+        //      exc. 중복 ID가 있으면 에러 처리 (SKILL_ID_DUPLICATED, 400)
+        //      exc. 존재하지 않거나 삭제된 ID가 있으면 에러 처리 (SKILL_ID_INVALID, 400, data에 해당 ID 목록)
+        //      -> 기존 기술 스택 순서(priority 오름차순)와 같으면 변경 없음
+        //      -> 다르면 일괄 삭제(@Modifying, 바로 실행) 후 priority 1부터 다시 저장 (유니크 제약 위반 방지)
+        if (dto.skillIds() != null) {
+            List<Skill> skills = skillReader.readAllInOrder(dto.skillIds());
+            List<Long> currentSkillIds = postSkillRepository.findAllByPostIdIn(List.of(postId)).stream()
+                    .map(postSkill -> postSkill.getSkill().getId())
+                    .toList();
+            if (!currentSkillIds.equals(dto.skillIds())) {
+                postSkillRepository.deleteAllByPostId(postId);
+                postSkillRepository.saveAll(IntStream.range(0, skills.size())
+                        .mapToObj(i -> PostSkill.builder()
+                                .post(post)
+                                .skill(skills.get(i))
+                                .priority(i + 1)
+                                .build())
+                        .toList());
+                changed = true;
+            }
+        }
+
+        // 4. 최종 이미지 목록 결정
+        //      -> 현재 이 게시글에 연결된 이미지 조회 (PK 오름차순)
+        //      -> postMediaIds가 null이면 현재 연결된 이미지 그대로
+        //      -> 보낸 경우 요청 순서대로 조회
+        //      exc. 중복 ID가 있으면 에러 처리 (POST_MEDIA_DUPLICATED, 400)
+        //      exc. 존재하지 않거나 삭제됐거나 다른 게시글에 연결된 이미지가 있으면 에러 처리 (POST_MEDIA_INVALID, 400, data에 해당 ID 목록)
+        //          -> 연결되지 않은 이미지, 이 게시글에 이미 연결된 이미지만 사용 가능
+        List<PostMedia> currentMedias = postMediaRepository.findAllByPostIdOrderByIdAsc(postId);
+        List<PostMedia> finalMedias = dto.postMediaIds() != null
+                ? readLinkablePostMedias(dto.postMediaIds(), postId) : currentMedias;
+        Set<Long> finalMediaIds = finalMedias.stream().map(PostMedia::getId).collect(Collectors.toSet());
+        boolean mediaChanged = !finalMediaIds.equals(currentMedias.stream().map(PostMedia::getId).collect(Collectors.toSet()));
+
+        // 5. 썸네일, 캡션 다시 계산 (본문이 바뀌었거나 이미지 목록이 바뀐 경우만)
+        //      -> 최종 본문 + 최종 이미지 목록 기준, 게시글 추가와 같은 방식 (MarkdownImageExtractor)
+        //      -> 썸네일 : 이미지 공개 URL과 처음 일치하는 본문 이미지의 s3 key (없으면 null)
+        //      -> 캡션 : 각 이미지가 본문에 처음 나온 곳의 alt (빈 값이면 null, 50자 초과시 자름, 본문에 없으면 null)
+        String thumbnailS3Key = post.getThumbnailS3Key();
+        if (contentChanged || mediaChanged) {
+            ImageAnalysis analysis = analyzeImages(content, finalMedias);
+            thumbnailS3Key = analysis.thumbnailS3Key();
+
+            // 6. 이미지 연결 변경 (5번을 수행한 경우만, 변경 감지)
+        //      -> 최종 목록에서 빠진 기존 이미지는 연결 해제 (PostMedia.unlinkPost, 이후 스케줄러가 정리)
+        //      -> 최종 목록의 이미지는 게시글 연결 + 캡션 저장 (PostMedia.linkPost)
+            currentMedias.stream()
+                    .filter(media -> !finalMediaIds.contains(media.getId()))
+                    .forEach(PostMedia::unlinkPost);
+            finalMedias.forEach(media -> media.linkPost(post, analysis.captions().get(media.getId())));
+            changed |= mediaChanged;
+        }
+
+        // 7. 게시글 수정 (변경 감지)
+        //      -> 제목, 요약, 본문, 기술 스택, 이미지 중 실제로 바뀐 값이 있을 때만 Post.update (수정일자 갱신)
+        //      -> 바뀐 값이 없으면 수정일자 유지
+        //      -> 수정 로그 기록 (postId)
+        if (changed) {
+            post.update(title, summary, content, thumbnailS3Key);
+            log.info("게시글 수정 - postId = {}", post.getId());
+        }
+
+        // 8. 응답 DTO로 변환
+        return UpdatePostResponseDto.fromEntity(post);
+    }
+
+    // 게시글에 연결할 수 있는 이미지 조회 (요청 순서 유지)
+    //      -> 연결되지 않은 이미지, postId 게시글에 이미 연결된 이미지만 사용 가능 (추가시 postId는 null)
     //      exc. 중복 ID가 있으면 에러 처리 (POST_MEDIA_DUPLICATED)
-    //      exc. 존재하지 않거나 삭제됐거나 이미 게시글에 연결된 이미지가 있으면 에러 처리 (POST_MEDIA_INVALID, data에 해당 ID 목록)
-    private List<PostMedia> readUnlinkedPostMedias(List<Long> postMediaIds) {
+    //      exc. 존재하지 않거나 삭제됐거나 다른 게시글에 연결된 이미지가 있으면 에러 처리 (POST_MEDIA_INVALID, data에 해당 ID 목록)
+    private List<PostMedia> readLinkablePostMedias(List<Long> postMediaIds, Long postId) {
         if (new HashSet<>(postMediaIds).size() != postMediaIds.size()) {
             throw new CustomException(ExceptionCode.POST_MEDIA_DUPLICATED);
         }
 
         Map<Long, PostMedia> mediaMap = postMediaRepository.findAllById(postMediaIds).stream()
-                .filter(media -> media.getPost() == null)
+                .filter(media -> media.getPost() == null || Objects.equals(media.getPost().getId(), postId))
                 .collect(Collectors.toMap(PostMedia::getId, Function.identity()));
         List<Long> invalidIds = postMediaIds.stream().filter(id -> !mediaMap.containsKey(id)).toList();
         if (!invalidIds.isEmpty()) {
             throw new CustomException(ExceptionCode.POST_MEDIA_INVALID, new CreatePostErrorItem(invalidIds));
         }
         return postMediaIds.stream().map(mediaMap::get).toList();
+    }
+
+    // 본문 이미지 분석 (MarkdownImageExtractor)
+    //      -> 썸네일 : 이미지 공개 URL과 처음 일치하는 본문 이미지의 s3 key (없으면 null, 외부 URL 제외)
+    //      -> 캡션 : 각 이미지가 본문에 처음 나온 곳의 alt (본문에 없으면 null)
+    private ImageAnalysis analyzeImages(String content, List<PostMedia> postMedias) {
+        Map<String, PostMedia> mediaByUrl = postMedias.stream()
+                .collect(Collectors.toMap(media -> fileUtil.toUrl(media.getS3Key()), Function.identity()));
+        String thumbnailS3Key = null;
+        Map<Long, String> captions = new HashMap<>();
+        for (MarkdownImage image : markdownImageExtractor.extract(content)) {
+            PostMedia media = mediaByUrl.get(image.url());
+            if (media == null) continue;
+            if (thumbnailS3Key == null) thumbnailS3Key = media.getS3Key();
+            captions.putIfAbsent(media.getId(), toCaption(image.alt()));
+        }
+        return new ImageAnalysis(thumbnailS3Key, captions);
+    }
+
+    // 본문 이미지 분석 결과 (썸네일 s3 key, 이미지 PK별 캡션)
+    private record ImageAnalysis(String thumbnailS3Key, Map<Long, String> captions) {
     }
 
     // 이미지 alt를 캡션으로 변환 (빈 값이면 null, 50자 초과시 자름)

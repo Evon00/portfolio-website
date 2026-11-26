@@ -6,15 +6,18 @@ import com.jh.backend.dto.post.item.FindAllAdminPostsItem;
 import com.jh.backend.dto.post.request.CheckPostSlugRequestDto;
 import com.jh.backend.dto.post.request.CreatePostRequestDto;
 import com.jh.backend.dto.post.request.FindAllAdminPostsRequestDto;
+import com.jh.backend.dto.post.request.UpdatePostRequestDto;
 import com.jh.backend.dto.post.response.CheckPostSlugResponseDto;
 import com.jh.backend.dto.post.response.CreatePostResponseDto;
 import com.jh.backend.dto.post.response.FindPostResponseDto;
+import com.jh.backend.dto.post.response.UpdatePostResponseDto;
 import com.jh.backend.dto.post.response.UploadPostImageResponseDto;
 import com.jh.backend.service.AdminPostService;
 import com.jh.backend.swagger.post.CheckPostSlugSwaggerDocs;
 import com.jh.backend.swagger.post.CreatePostSwaggerDocs;
 import com.jh.backend.swagger.post.FindAllAdminPostsSwaggerDocs;
 import com.jh.backend.swagger.post.FindPostSwaggerDocs;
+import com.jh.backend.swagger.post.UpdatePostSwaggerDocs;
 import com.jh.backend.swagger.post.UploadPostImageSwaggerDocs;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -25,6 +28,7 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -81,5 +85,15 @@ public class AdminPostController {
             @Positive(message = "게시글 PK는 0보다 큰 양수여야 합니다.")
             @PathVariable Long postId) {
         return ResponseEntity.ok(CommonApiResponse.ok(adminPostService.findPost(postId)));
+    }
+
+    // 게시글 수정
+    @UpdatePostSwaggerDocs
+    @PatchMapping("/{postId}")
+    public ResponseEntity<CommonApiResponse<UpdatePostResponseDto>> updatePost(
+            @Positive(message = "게시글 PK는 0보다 큰 양수여야 합니다.")
+            @PathVariable Long postId,
+            @Valid @RequestBody UpdatePostRequestDto dto) {
+        return ResponseEntity.ok(CommonApiResponse.ok(adminPostService.updatePost(postId, dto)));
     }
 }
