@@ -451,17 +451,55 @@ public class AdminProjectServiceImpl implements AdminProjectService {
         //      -> 값이 바뀐 프로젝트만 UPDATE
         //      -> 삭제로 생긴 빈 번호, 중복 번호도 함께 정리
         //      -> priority는 유니크 제약이 없어 UPDATE 순서와 무관
-        for (int i = 0; i < projects.size(); i++) {
-            if (!Objects.equals(projects.get(i).getPriority(), i + 1)) {
-                projects.get(i).changePriority(i + 1);
-            }
-        }
+        renumberPriorities(projects);
 
         // 6. 순서 변경 로그 기록 (projectId, priority)
         log.info("프로젝트 순서 변경 - projectId = {}, priority = {}", project.getId(), project.getPriority());
 
         // 7. 응답 DTO로 변환
         return UpdateProjectPriorityResponseDto.fromEntity(project);
+    }
+
+    // 프로젝트 삭제 (soft delete)
+    //      -> S3 파일, 프로젝트 기술 스택(jh_project_skill)은 유지 (복구 대비)
+    //      -> 경로 변수 projectId는 컨트롤러에서 @Positive 검증 (0 이하면 400)
+    @Override
+    @Transactional
+    public void deleteProject(Long projectId) {
+
+        // 1. 프로젝트 조회
+        //      -> 삭제된 프로젝트 제외 (@SQLRestriction)
+        //      exc. 프로젝트 미존재 또는 이미 삭제된 경우 에러 처리 (PROJECT_NOT_FOUND, 404)
+        Project project = projectRepository.findById(projectId).orElseThrow(
+                () -> new CustomException(ExceptionCode.PROJECT_NOT_FOUND));
+
+        // 2. 갤러리 이미지 soft delete (변경 감지)
+        //      -> 프로젝트 이미지 조회 (findAllByProjectIdOrderByPriorityAscIdAsc, 삭제된 이미지 제외)
+        //      -> 각 이미지 delete() (deleted_at 기록, 대표 이미지 유니크 인덱스는 삭제되지 않은 행만 대상)
+        projectMediaRepository.findAllByProjectIdOrderByPriorityAscIdAsc(projectId).forEach(ProjectMedia::delete);
+
+        // 3. 프로젝트 soft delete (변경 감지)
+        //      -> Project.delete() (deleted_at 기록)
+        //      -> 슬러그 부분 유니크 인덱스(WHERE deleted_at IS NULL)라 같은 슬러그 재사용 가능
+        project.delete();
+
+        // 4. 남은 프로젝트 순서 당기기
+        //      -> 삭제되지 않은 프로젝트 전체 조회 (priority 오름차순, 같으면 PK 오름차순)
+        //          -> 3번의 delete()가 조회 전에 flush되어 삭제된 프로젝트는 제외됨
+        //      -> 1부터 다시 번호 매기기 (renumberPriorities, 순서 변경 API와 공용)
+        renumberPriorities(projectRepository.findAllByOrderByPriorityAscIdAsc());
+
+        // 5. 삭제 로그 기록 (projectId)
+        log.info("프로젝트 삭제 - projectId = {}", project.getId());
+    }
+
+    // 프로젝트 순서를 목록 순서대로 1부터 다시 매김 (값이 바뀐 프로젝트만 변경 감지로 UPDATE)
+    private void renumberPriorities(List<Project> projects) {
+        for (int i = 0; i < projects.size(); i++) {
+            if (!Objects.equals(projects.get(i).getPriority(), i + 1)) {
+                projects.get(i).changePriority(i + 1);
+            }
+        }
     }
 
     // 수정시 최종 이미지 정보 검증

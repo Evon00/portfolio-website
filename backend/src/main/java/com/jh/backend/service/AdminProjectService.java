@@ -35,4 +35,7 @@ public interface AdminProjectService {
 
     // 프로젝트 순서 변경
     UpdateProjectPriorityResponseDto updateProjectPriority(Long projectId, UpdateProjectPriorityRequestDto dto);
+
+    // 프로젝트 삭제
+    void deleteProject(Long projectId);
 }

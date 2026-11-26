@@ -16,6 +16,7 @@ import com.jh.backend.dto.project.response.UpdateProjectResponseDto;
 import com.jh.backend.service.AdminProjectService;
 import com.jh.backend.swagger.project.CheckProjectSlugSwaggerDocs;
 import com.jh.backend.swagger.project.CreateProjectSwaggerDocs;
+import com.jh.backend.swagger.project.DeleteProjectSwaggerDocs;
 import com.jh.backend.swagger.project.FindAllAdminProjectsSwaggerDocs;
 import com.jh.backend.swagger.project.FindProjectSwaggerDocs;
 import com.jh.backend.swagger.project.UpdateProjectPrioritySwaggerDocs;
@@ -28,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -102,5 +104,15 @@ public class AdminProjectController {
             @PathVariable Long projectId,
             @Valid @RequestBody UpdateProjectPriorityRequestDto dto) {
         return ResponseEntity.ok(CommonApiResponse.ok(adminProjectService.updateProjectPriority(projectId, dto)));
+    }
+
+    // 프로젝트 삭제
+    @DeleteProjectSwaggerDocs
+    @DeleteMapping("/{projectId}")
+    public ResponseEntity<CommonApiResponse<Void>> deleteProject(
+            @Positive(message = "프로젝트 PK는 0보다 큰 양수여야 합니다.")
+            @PathVariable Long projectId) {
+        adminProjectService.deleteProject(projectId);
+        return ResponseEntity.ok(CommonApiResponse.ok());
     }
 }
