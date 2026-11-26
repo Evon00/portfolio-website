@@ -7,12 +7,14 @@ import com.jh.backend.common.enums.PostSortBy;
 import com.jh.backend.common.enums.SortDirection;
 import com.jh.backend.dto.post.item.CreatePostErrorItem;
 import com.jh.backend.dto.post.item.FindAllAdminPostsItem;
+import com.jh.backend.dto.post.item.FindPostMediaItem;
 import com.jh.backend.dto.post.item.PostSkillItem;
 import com.jh.backend.dto.post.request.CheckPostSlugRequestDto;
 import com.jh.backend.dto.post.request.CreatePostRequestDto;
 import com.jh.backend.dto.post.request.FindAllAdminPostsRequestDto;
 import com.jh.backend.dto.post.response.CheckPostSlugResponseDto;
 import com.jh.backend.dto.post.response.CreatePostResponseDto;
+import com.jh.backend.dto.post.response.FindPostResponseDto;
 import com.jh.backend.dto.post.response.UploadPostImageResponseDto;
 import com.jh.backend.entity.Admin;
 import com.jh.backend.entity.Post;
@@ -239,6 +241,39 @@ public class AdminPostServiceImpl implements AdminPostService {
         return PageResponseDto.of(posts, posts.stream()
                 .map(post -> FindAllAdminPostsItem.fromEntity(post, skillsByPostId.getOrDefault(post.getId(), List.of())))
                 .toList());
+    }
+
+    // 게시글 상세 조회 (수정용)
+    //      -> 관리자 수정 화면용, 조회수 증가·조회 로그 기록 없음 (조회수는 공개 상세 조회에서만 증가)
+    //      -> 경로 변수 postId는 컨트롤러에서 @Positive 검증 (0 이하면 400)
+    @Override
+    @Transactional(readOnly = true)
+    public FindPostResponseDto findPost(Long postId) {
+
+        // 1. 게시글 조회
+        //      -> 삭제된 게시글 제외 (@SQLRestriction)
+        //      exc. 게시글 미존재시 에러 처리 (POST_NOT_FOUND, 404)
+        Post post = postRepository.findById(postId).orElseThrow(
+                () -> new CustomException(ExceptionCode.POST_NOT_FOUND));
+
+        // 2. 게시글 기술 스택 조회 (기존 findAllByPostIdIn 재사용, 기술 스택 함께 조회)
+        //      -> priority 오름차순
+        //      -> skillUrl은 s3 key를 공개 주소로 변환
+        List<PostSkillItem> skills = postSkillRepository.findAllByPostIdIn(List.of(postId)).stream()
+                .map(postSkill -> PostSkillItem.fromEntity(postSkill, fileUtil.toUrl(postSkill.getSkill().getS3Key())))
+                .toList();
+
+        // 3. 게시글 이미지 조회
+        //      -> 게시글에 연결된 이미지만, 삭제된 이미지 제외 (@SQLRestriction)
+        //      -> PK 오름차순 (업로드 순서)
+        //      -> postMediaUrl은 s3 key를 공개 주소로 변환
+        List<FindPostMediaItem> postMedias = postMediaRepository.findAllByPostIdOrderByIdAsc(postId).stream()
+                .map(media -> FindPostMediaItem.fromEntity(media, fileUtil.toUrl(media.getS3Key())))
+                .toList();
+
+        // 4. 응답 DTO로 변환
+        //      -> 본문은 저장된 원문 그대로 응답
+        return FindPostResponseDto.fromEntity(post, skills, postMedias);
     }
 
     // 게시글에 연결되지 않은 이미지 조회 (요청 순서 유지)
