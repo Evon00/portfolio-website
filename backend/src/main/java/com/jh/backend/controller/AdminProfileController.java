@@ -2,10 +2,13 @@ package com.jh.backend.controller;
 
 import com.jh.backend.common.CommonApiResponse;
 import com.jh.backend.dto.profile.request.UpdateProfileRequestDto;
+import com.jh.backend.dto.profile.request.UpdateProfileSkillsRequestDto;
 import com.jh.backend.dto.profile.response.UpdateProfileResponseDto;
+import com.jh.backend.dto.profile.response.UpdateProfileSkillsResponseDto;
 import com.jh.backend.dto.profile.response.UploadProfileImageResponseDto;
 import com.jh.backend.service.AdminProfileService;
 import com.jh.backend.swagger.profile.DeleteProfileImageSwaggerDocs;
+import com.jh.backend.swagger.profile.UpdateProfileSkillsSwaggerDocs;
 import com.jh.backend.swagger.profile.UpdateProfileSwaggerDocs;
 import com.jh.backend.swagger.profile.UploadProfileImageSwaggerDocs;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -17,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -54,5 +58,13 @@ public class AdminProfileController {
     public ResponseEntity<CommonApiResponse<Void>> deleteProfileImage() {
         adminProfileService.deleteProfileImage();
         return ResponseEntity.ok(CommonApiResponse.ok());
+    }
+
+    // 핵심 기술 스택 수정 (전체 교체)
+    @UpdateProfileSkillsSwaggerDocs
+    @PutMapping("/skill")
+    public ResponseEntity<CommonApiResponse<UpdateProfileSkillsResponseDto>> updateProfileSkills(
+            @Valid @RequestBody UpdateProfileSkillsRequestDto dto) {
+        return ResponseEntity.ok(CommonApiResponse.ok(adminProfileService.updateProfileSkills(dto)));
     }
 }
