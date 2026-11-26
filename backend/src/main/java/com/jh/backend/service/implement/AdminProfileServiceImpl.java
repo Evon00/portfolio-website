@@ -3,7 +3,6 @@ package com.jh.backend.service.implement;
 import com.jh.backend.common.CacheNames;
 import com.jh.backend.common.enums.StorageFolder;
 import com.jh.backend.dto.profile.item.FindProfileItem;
-import com.jh.backend.dto.profile.item.UpdateProfileSkillsErrorItem;
 import com.jh.backend.dto.profile.request.UpdateProfileRequestDto;
 import com.jh.backend.dto.profile.request.UpdateProfileSkillsRequestDto;
 import com.jh.backend.dto.profile.response.UpdateProfileResponseDto;
@@ -16,11 +15,11 @@ import com.jh.backend.exception.CustomException;
 import com.jh.backend.exception.ExceptionCode;
 import com.jh.backend.repository.AdminRepository;
 import com.jh.backend.repository.AdminSkillRepository;
-import com.jh.backend.repository.SkillRepository;
 import com.jh.backend.service.AdminProfileService;
 import com.jh.backend.util.file.FileUtil;
 import com.jh.backend.util.file.UploadedFile;
 import com.jh.backend.util.login.LoginChecker;
+import com.jh.backend.util.skill.SkillReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -28,11 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Slf4j
@@ -42,7 +37,7 @@ public class AdminProfileServiceImpl implements AdminProfileService {
 
     private final AdminRepository adminRepository;
     private final AdminSkillRepository adminSkillRepository;
-    private final SkillRepository skillRepository;
+    private final SkillReader skillReader;
     private final LoginChecker loginChecker;
     private final FileUtil fileUtil;
 
@@ -162,41 +157,30 @@ public class AdminProfileServiceImpl implements AdminProfileService {
         Admin admin = adminRepository.findById(adminId).orElseThrow(
                 () -> new CustomException(ExceptionCode.ADMIN_NOT_FOUND));
 
-        // 2. 중복 ID 확인
-        //      exc. 같은 기술 스택 ID가 2번 이상 있으면 에러 처리 (SKILL_ID_DUPLICATED, 400)
-        List<Long> skillIds = dto.skillIds();
-        if (new HashSet<>(skillIds).size() != skillIds.size()) {
-            throw new CustomException(ExceptionCode.SKILL_ID_DUPLICATED);
-        }
-
-        // 3. 기술 스택 조회 (findAllById, 쿼리 1번)
+        // 2. 기술 스택 조회 (SkillReader, 요청 순서 유지, 쿼리 1번)
         //      -> 삭제된 기술 스택은 조회되지 않음 (@SQLRestriction)
-        //      exc. 조회되지 않은 ID가 있으면 에러 처리 (SKILL_ID_INVALID, 400, data에 없는 ID 목록)
-        Map<Long, Skill> skillMap = skillRepository.findAllById(skillIds).stream()
-                .collect(Collectors.toMap(Skill::getId, Function.identity()));
-        List<Long> invalidIds = skillIds.stream().filter(id -> !skillMap.containsKey(id)).toList();
-        if (!invalidIds.isEmpty()) {
-            throw new CustomException(ExceptionCode.SKILL_ID_INVALID, new UpdateProfileSkillsErrorItem(invalidIds));
-        }
+        //      exc. 중복 ID가 있으면 에러 처리 (SKILL_ID_DUPLICATED, 400)
+        //      exc. 존재하지 않거나 삭제된 ID가 있으면 에러 처리 (SKILL_ID_INVALID, 400, data에 해당 ID 목록)
+        List<Skill> skills = skillReader.readAllInOrder(dto.skillIds());
 
-        // 4. 기존 핵심 기술 스택 일괄 삭제 (@Modifying JPQL)
+        // 3. 기존 핵심 기술 스택 일괄 삭제 (@Modifying JPQL)
         //      -> 바로 실행되어 같은 기술 스택을 다시 저장해도 UNIQUE(admin_id, skill_id) 위반 없음
         //      -> 빈 배열이면 삭제만 하고 저장할 항목 없음 (핵심 기술 스택 비우기)
         adminSkillRepository.deleteAllByAdminId(adminId);
 
-        // 5. 요청 배열 순서대로 저장 (saveAll)
+        // 4. 요청 배열 순서대로 저장 (saveAll)
         //      -> priority는 1부터 순서대로
         //      -> 수정 로그 기록 (adminId, 기술 스택 수)
-        List<AdminSkill> adminSkills = adminSkillRepository.saveAll(IntStream.range(0, skillIds.size())
+        List<AdminSkill> adminSkills = adminSkillRepository.saveAll(IntStream.range(0, skills.size())
                 .mapToObj(i -> AdminSkill.builder()
                         .admin(admin)
-                        .skill(skillMap.get(skillIds.get(i)))
+                        .skill(skills.get(i))
                         .priority(i + 1)
                         .build())
                 .toList());
         log.info("핵심 기술 스택 수정 - adminId = {}, skillCount = {}", adminId, adminSkills.size());
 
-        // 6. 응답 DTO로 변환
+        // 5. 응답 DTO로 변환
         //      -> 저장한 순서(priority 오름차순)로 변환, 다시 조회하지 않음
         //      -> skillUrl은 s3 key를 공개 주소로 변환
         return new UpdateProfileSkillsResponseDto(adminSkills.stream()
