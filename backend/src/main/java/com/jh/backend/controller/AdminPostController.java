@@ -1,14 +1,20 @@
 package com.jh.backend.controller;
 
 import com.jh.backend.common.CommonApiResponse;
+import com.jh.backend.dto.post.request.CheckPostSlugRequestDto;
+import com.jh.backend.dto.post.response.CheckPostSlugResponseDto;
 import com.jh.backend.dto.post.response.UploadPostImageResponseDto;
 import com.jh.backend.service.AdminPostService;
+import com.jh.backend.swagger.post.CheckPostSlugSwaggerDocs;
 import com.jh.backend.swagger.post.UploadPostImageSwaggerDocs;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -30,5 +36,13 @@ public class AdminPostController {
     public ResponseEntity<CommonApiResponse<UploadPostImageResponseDto>> uploadPostImage(
             @RequestPart MultipartFile file) {
         return ResponseEntity.ok(CommonApiResponse.ok(adminPostService.uploadPostImage(file)));
+    }
+
+    // 게시글 슬러그 중복 확인
+    @CheckPostSlugSwaggerDocs
+    @GetMapping("/slug/check")
+    public ResponseEntity<CommonApiResponse<CheckPostSlugResponseDto>> checkPostSlug(
+            @Valid @ParameterObject CheckPostSlugRequestDto dto) {
+        return ResponseEntity.ok(CommonApiResponse.ok(adminPostService.checkPostSlug(dto)));
     }
 }
