@@ -71,6 +71,8 @@ public enum ExceptionCode {
     //POST
     POST_NOT_FOUND("POST_001", HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다."),
     POST_SLUG_DUPLICATED("POST_002", HttpStatus.CONFLICT, "이미 사용 중인 게시글 슬러그입니다."),
+    POST_MEDIA_DUPLICATED("POST_003", HttpStatus.BAD_REQUEST, "중복된 게시글 이미지가 포함되어 있습니다."),
+    POST_MEDIA_INVALID("POST_004", HttpStatus.BAD_REQUEST, "사용할 수 없는 게시글 이미지가 포함되어 있습니다."),
 
     //PROJECT
     PROJECT_NOT_FOUND("PROJECT_001", HttpStatus.NOT_FOUND, "프로젝트를 찾을 수 없습니다."),

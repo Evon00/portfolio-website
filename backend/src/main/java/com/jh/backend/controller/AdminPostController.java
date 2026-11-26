@@ -2,10 +2,13 @@ package com.jh.backend.controller;
 
 import com.jh.backend.common.CommonApiResponse;
 import com.jh.backend.dto.post.request.CheckPostSlugRequestDto;
+import com.jh.backend.dto.post.request.CreatePostRequestDto;
 import com.jh.backend.dto.post.response.CheckPostSlugResponseDto;
+import com.jh.backend.dto.post.response.CreatePostResponseDto;
 import com.jh.backend.dto.post.response.UploadPostImageResponseDto;
 import com.jh.backend.service.AdminPostService;
 import com.jh.backend.swagger.post.CheckPostSlugSwaggerDocs;
+import com.jh.backend.swagger.post.CreatePostSwaggerDocs;
 import com.jh.backend.swagger.post.UploadPostImageSwaggerDocs;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -16,6 +19,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
@@ -44,5 +48,13 @@ public class AdminPostController {
     public ResponseEntity<CommonApiResponse<CheckPostSlugResponseDto>> checkPostSlug(
             @Valid @ParameterObject CheckPostSlugRequestDto dto) {
         return ResponseEntity.ok(CommonApiResponse.ok(adminPostService.checkPostSlug(dto)));
+    }
+
+    // 게시글 추가
+    @CreatePostSwaggerDocs
+    @PostMapping
+    public ResponseEntity<CommonApiResponse<CreatePostResponseDto>> createPost(
+            @Valid @RequestBody CreatePostRequestDto dto) {
+        return ResponseEntity.ok(CommonApiResponse.ok(adminPostService.createPost(dto)));
     }
 }
