@@ -133,6 +133,7 @@ public class AdminSkillServiceImpl implements AdminSkillService {
     }
 
     // 기술 스택 수정
+    //      -> PATCH 방식 (보낸 값만 수정, data 파트 또는 필드가 null이면 기존 값 유지)
     //      -> 프로필의 핵심 기술 스택에 표시되므로 커밋 후 프로필 캐시 삭제
     @Override
     @Transactional
@@ -144,16 +145,21 @@ public class AdminSkillServiceImpl implements AdminSkillService {
         Skill skill = skillRepository.findById(skillId).orElseThrow(
                 () -> new CustomException(ExceptionCode.SKILL_NOT_FOUND));
 
-        // 2. 이름, 카테고리 앞뒤 공백 제거
+        // 2. 수정할 값 결정
+        //      -> 앞뒤 공백은 DTO에서 검증 전에 제거 (공백만 보내면 DTO 검증에서 400)
+        //      -> data 파트가 없으면 이름, 카테고리 모두 기존 값 유지
+        //      -> 이름, 카테고리 : null이면 기존 값 유지
         //      -> 카테고리는 입력값 그대로 저장 (기존 카테고리 표기로 맞추지 않음)
-        String name = dto.skillName().strip();
-        String category = dto.skillCategory().strip();
+        String requestName = dto != null ? dto.skillName() : null;
+        String requestCategory = dto != null ? dto.skillCategory() : null;
+        String name = requestName != null ? requestName : skill.getName();
+        String category = requestCategory != null ? requestCategory : skill.getCategory();
 
-        // 3. 이름 중복 확인 (자기 자신 제외, 대소문자 무시)
+        // 3. 이름 중복 확인 (이름을 보낸 경우에만, 자기 자신 제외, 대소문자 무시)
         //      exc. 다른 기술 스택과 이름 중복시 에러 처리 (SKILL_NAME_DUPLICATED)
         //      -> 자기 이름의 대소문자만 바꾸는 것은 허용
         //      -> 중복 확인을 업로드보다 먼저 하여 불필요한 S3 업로드 방지
-        if (skillRepository.existsByNameIgnoreCaseAndIdNot(name, skillId)) {
+        if (requestName != null && skillRepository.existsByNameIgnoreCaseAndIdNot(name, skillId)) {
             throw new CustomException(ExceptionCode.SKILL_NAME_DUPLICATED);
         }
 
@@ -170,6 +176,7 @@ public class AdminSkillServiceImpl implements AdminSkillService {
         }
 
         // 5. 이름, 카테고리 수정 (변경 감지)
+        //      -> 값이 같으면 UPDATE 미실행
         //      -> 수정 로그 기록 (skillId)
         skill.update(name, category);
         log.info("기술 스택 수정 - skillId = {}", skillId);

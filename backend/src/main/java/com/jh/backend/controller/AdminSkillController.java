@@ -71,7 +71,7 @@ public class AdminSkillController {
     public ResponseEntity<CommonApiResponse<UpdateSkillResponseDto>> updateSkill(
             @Positive(message = "기술 스택 PK는 0보다 큰 양수여야 합니다.")
             @PathVariable Long skillId,
-            @Valid @RequestPart UpdateSkillRequestDto data,
+            @Valid @RequestPart(required = false) UpdateSkillRequestDto data,
             @RequestPart(required = false) MultipartFile file) {
         return ResponseEntity.ok(CommonApiResponse.ok(adminSkillService.updateSkill(skillId, data, file)));
     }
