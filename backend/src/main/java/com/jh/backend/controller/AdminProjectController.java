@@ -6,14 +6,17 @@ import com.jh.backend.dto.project.item.FindAllAdminProjectsItem;
 import com.jh.backend.dto.project.request.CheckProjectSlugRequestDto;
 import com.jh.backend.dto.project.request.CreateProjectRequestDto;
 import com.jh.backend.dto.project.request.FindAllAdminProjectsRequestDto;
+import com.jh.backend.dto.project.request.UpdateProjectRequestDto;
 import com.jh.backend.dto.project.response.CheckProjectSlugResponseDto;
 import com.jh.backend.dto.project.response.CreateProjectResponseDto;
 import com.jh.backend.dto.project.response.FindProjectResponseDto;
+import com.jh.backend.dto.project.response.UpdateProjectResponseDto;
 import com.jh.backend.service.AdminProjectService;
 import com.jh.backend.swagger.project.CheckProjectSlugSwaggerDocs;
 import com.jh.backend.swagger.project.CreateProjectSwaggerDocs;
 import com.jh.backend.swagger.project.FindAllAdminProjectsSwaggerDocs;
 import com.jh.backend.swagger.project.FindProjectSwaggerDocs;
+import com.jh.backend.swagger.project.UpdateProjectSwaggerDocs;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
@@ -23,6 +26,7 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -73,5 +77,16 @@ public class AdminProjectController {
             @Positive(message = "프로젝트 PK는 0보다 큰 양수여야 합니다.")
             @PathVariable Long projectId) {
         return ResponseEntity.ok(CommonApiResponse.ok(adminProjectService.findProject(projectId)));
+    }
+
+    // 프로젝트 수정
+    @UpdateProjectSwaggerDocs
+    @PatchMapping(value = "/{projectId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<CommonApiResponse<UpdateProjectResponseDto>> updateProject(
+            @Positive(message = "프로젝트 PK는 0보다 큰 양수여야 합니다.")
+            @PathVariable Long projectId,
+            @Valid @RequestPart UpdateProjectRequestDto data,
+            @RequestPart(required = false) List<MultipartFile> files) {
+        return ResponseEntity.ok(CommonApiResponse.ok(adminProjectService.updateProject(projectId, data, files)));
     }
 }

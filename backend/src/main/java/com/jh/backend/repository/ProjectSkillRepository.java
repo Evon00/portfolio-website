@@ -2,6 +2,7 @@ package com.jh.backend.repository;
 
 import com.jh.backend.entity.ProjectSkill;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -26,4 +27,9 @@ public interface ProjectSkillRepository extends JpaRepository<ProjectSkill, Long
             ORDER BY ps.project.id ASC, ps.priority ASC
             """)
     List<ProjectSkill> findAllByProjectIdIn(@Param("projectIds") Collection<Long> projectIds);
+
+    // 프로젝트 기술 스택 일괄 삭제 (바로 실행, 다시 저장할 때 유니크 제약 위반 방지)
+    @Modifying
+    @Query("DELETE FROM ProjectSkill ps WHERE ps.project.id = :projectId")
+    void deleteAllByProjectId(@Param("projectId") Long projectId);
 }

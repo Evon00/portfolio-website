@@ -5,13 +5,16 @@ import com.jh.backend.common.enums.StorageFolder;
 import com.jh.backend.dto.project.item.FindAllAdminProjectsItem;
 import com.jh.backend.dto.project.item.FindProjectMediaItem;
 import com.jh.backend.dto.project.item.ProjectSkillItem;
+import com.jh.backend.dto.project.item.UpdateProjectMediaItem;
 import com.jh.backend.dto.project.item.CreateProjectMediaItem;
 import com.jh.backend.dto.project.request.CheckProjectSlugRequestDto;
 import com.jh.backend.dto.project.request.CreateProjectRequestDto;
 import com.jh.backend.dto.project.request.FindAllAdminProjectsRequestDto;
+import com.jh.backend.dto.project.request.UpdateProjectRequestDto;
 import com.jh.backend.dto.project.response.CheckProjectSlugResponseDto;
 import com.jh.backend.dto.project.response.CreateProjectResponseDto;
 import com.jh.backend.dto.project.response.FindProjectResponseDto;
+import com.jh.backend.dto.project.response.UpdateProjectResponseDto;
 import com.jh.backend.entity.Admin;
 import com.jh.backend.entity.Project;
 import com.jh.backend.entity.ProjectMedia;
@@ -38,10 +41,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -257,6 +265,201 @@ public class AdminProjectServiceImpl implements AdminProjectService {
         // 4. 응답 DTO로 변환
         //      -> 본문은 저장된 원문 그대로 응답
         return FindProjectResponseDto.fromEntity(project, skills, projectMedias);
+    }
+
+    // 프로젝트 수정 (PATCH, multipart : data + files)
+    //      -> 보낸 필드만 수정, null이면 기존 값 유지 (공백 제목·요약·본문은 DTO에서 400)
+    //      -> 종료일, GitHub 주소, 사이트 주소는 빈 문자열이면 지움 (null로 저장)
+    //      -> 슬러그는 수정 불가
+    //      -> 경로 변수 projectId는 컨트롤러에서 @Positive 검증 (0 이하면 400)
+    //      -> 검증을 모두 통과한 뒤 새 이미지 S3 업로드, 실패로 롤백되면 업로드한 파일 삭제 (FileUtil)
+    @Override
+    @Transactional
+    public UpdateProjectResponseDto updateProject(Long projectId, UpdateProjectRequestDto dto, List<MultipartFile> files) {
+
+        // 1. 프로젝트 조회
+        //      -> 삭제된 프로젝트 제외 (@SQLRestriction)
+        //      exc. 프로젝트 미존재시 에러 처리 (PROJECT_NOT_FOUND, 404)
+        Project project = projectRepository.findById(projectId).orElseThrow(
+                () -> new CustomException(ExceptionCode.PROJECT_NOT_FOUND));
+
+        // 2. 최종 값 결정
+        //      -> 제목, 요약, 본문, 시작일, 공개 여부 : null이면 기존 값
+        //      -> 종료일, GitHub 주소, 사이트 주소 : null이면 기존 값, 빈 문자열이면 null, 그 외 보낸 값
+        //      exc. 종료일이 존재하지 않는 날짜(2026-02-30 등)면 에러 처리 (VALID_ERROR, 400)
+        String title = dto.projectTitle() != null ? dto.projectTitle() : project.getTitle();
+        String summary = dto.projectSummary() != null ? dto.projectSummary() : project.getSummary();
+        String content = dto.projectContent() != null ? dto.projectContent() : project.getContent();
+        LocalDate startDate = dto.projectStartDate() != null ? dto.projectStartDate() : project.getStartDate();
+        LocalDate endDate = dto.projectEndDate() == null ? project.getEndDate()
+                : dto.projectEndDate().isEmpty() ? null : parseDate(dto.projectEndDate());
+        String githubUrl = dto.projectGithubUrl() == null ? project.getGithubUrl() : emptyToNull(dto.projectGithubUrl());
+        boolean githubIsPublic = dto.projectGithubIsPublic() != null ? dto.projectGithubIsPublic() : project.isGithubIsPublic();
+        String url = dto.projectUrl() == null ? project.getUrl() : emptyToNull(dto.projectUrl());
+
+        // 3. 날짜 범위 확인 (최종 값 기준)
+        //      exc. 최종 종료일이 최종 시작일보다 이르면 에러 처리 (DATE_RANGE_INVALID, 400)
+        if (endDate != null && endDate.isBefore(startDate)) {
+            throw new CustomException(ExceptionCode.DATE_RANGE_INVALID);
+        }
+
+        // 4. 기술 스택 조회 (skillIds를 보낸 경우만, SkillReader로 요청 순서 유지)
+        //      exc. 중복 ID가 있으면 에러 처리 (SKILL_ID_DUPLICATED, 400)
+        //      exc. 존재하지 않거나 삭제된 ID가 있으면 에러 처리 (SKILL_ID_INVALID, 400, data에 해당 ID 목록)
+        List<Skill> skills = dto.skillIds() != null ? skillReader.readAllInOrder(dto.skillIds()) : null;
+
+        // 5. 이미지 정보 검증 (files가 null이면 빈 목록)
+        //      -> projectMedias가 null이면 이미지 유지
+        //          exc. 이때 파일을 보내면 에러 처리 (PROJECT_MEDIA_INVALID, 400)
+        //      -> projectMedias를 보낸 경우 최종 갤러리 전체로 판단 (빈 배열이면 전체 삭제)
+        //          -> 현재 프로젝트 이미지 조회 (삭제된 이미지 제외)
+        //          exc. 파일이 10개 초과면 에러 처리 (FILE_COUNT_EXCEED, 400)
+        //          exc. 각 항목은 projectMediaId, fileIndex 중 정확히 하나만 (둘 다 있거나 둘 다 없으면 PROJECT_MEDIA_INVALID, 400)
+        //          exc. projectMediaId가 이 프로젝트의 이미지가 아니거나 중복이면 에러 처리 (PROJECT_MEDIA_INVALID, 400)
+        //          exc. fileIndex 항목 수와 파일 수가 다르거나, 범위 밖이거나 중복이면 에러 처리 (PROJECT_MEDIA_INVALID, 400)
+        //          exc. 대표 이미지가 2개 이상이면 에러 처리 (PROJECT_MEDIA_IMPORTANT_DUPLICATED, 400)
+        List<MultipartFile> mediaFiles = files != null ? files : List.of();
+        List<UpdateProjectMediaItem> medias = dto.projectMedias();
+        List<ProjectMedia> currentMedias = List.of();
+        if (medias == null) {
+            if (!mediaFiles.isEmpty()) {
+                throw new CustomException(ExceptionCode.PROJECT_MEDIA_INVALID);
+            }
+        } else {
+            currentMedias = projectMediaRepository.findAllByProjectIdOrderByPriorityAscIdAsc(projectId);
+            validateUpdateProjectMedias(mediaFiles, medias, currentMedias);
+        }
+
+        // 6. 프로젝트 수정 (변경 감지, Project.update)
+        project.update(title, summary, content, githubUrl, githubIsPublic, url, startDate, endDate);
+
+        // 7. 기술 스택 교체 (skillIds를 보낸 경우만)
+        //      -> 기존 기술 스택 순서(priority 오름차순)와 같으면 변경 없음
+        //      -> 다르면 일괄 삭제(@Modifying, 바로 실행) 후 priority 1부터 다시 저장 (유니크 제약 위반 방지)
+        if (skills != null) {
+            List<Long> currentSkillIds = projectSkillRepository.findAllByProjectIdIn(List.of(projectId)).stream()
+                    .map(projectSkill -> projectSkill.getSkill().getId())
+                    .toList();
+            if (!currentSkillIds.equals(dto.skillIds())) {
+                projectSkillRepository.deleteAllByProjectId(projectId);
+                projectSkillRepository.saveAll(IntStream.range(0, skills.size())
+                        .mapToObj(i -> ProjectSkill.builder()
+                                .project(project)
+                                .skill(skills.get(i))
+                                .priority(i + 1)
+                                .build())
+                        .toList());
+            }
+        }
+
+        // 8. 이미지 반영 (projectMedias를 보낸 경우만)
+        if (medias != null) {
+            Map<Long, ProjectMedia> currentMediaById = currentMedias.stream()
+                    .collect(Collectors.toMap(ProjectMedia::getId, Function.identity()));
+            Set<Long> keptMediaIds = medias.stream()
+                    .map(UpdateProjectMediaItem::projectMediaId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+
+            // 8-1. 최종 목록에서 빠진 기존 이미지 삭제
+            //      -> S3 파일 삭제 예약 (FileUtil.delete, 커밋 후 삭제)
+            //      -> DB 행 hard delete (관리자가 직접 뺀 이미지라 복구 불필요)
+            List<ProjectMedia> removedMedias = currentMedias.stream()
+                    .filter(media -> !keptMediaIds.contains(media.getId()))
+                    .toList();
+            if (!removedMedias.isEmpty()) {
+                removedMedias.forEach(media -> fileUtil.delete(media.getS3Key()));
+                projectMediaRepository.deleteAllInBatch(removedMedias);
+            }
+
+            // 8-2. 남은 기존 이미지의 대표 여부를 모두 false로 바꾼 뒤 flush
+            //      -> 대표 이미지 부분 유니크 인덱스(프로젝트당 1개) 위반 방지
+            //      -> Hibernate는 INSERT를 UPDATE보다 먼저 실행하므로, 새 대표 이미지 저장 전에 기존 대표를 먼저 해제
+            keptMediaIds.forEach(id -> {
+                ProjectMedia media = currentMediaById.get(id);
+                media.update(media.getCaption(), false, media.getPriority());
+            });
+            projectMediaRepository.flush();
+
+            // 8-3. 최종 목록 순서대로 반영 (priority 1부터)
+            //      -> 기존 이미지 : 캡션, 대표 여부, 순서 수정 (ProjectMedia.update)
+            //      -> 새 이미지 : fileIndex의 파일 업로드 (StorageFolder.PROJECT) 후 저장
+            //      -> 캡션 null은 설명 없음, 대표 여부 null은 false
+            List<ProjectMedia> newMedias = new ArrayList<>();
+            for (int i = 0; i < medias.size(); i++) {
+                UpdateProjectMediaItem media = medias.get(i);
+                boolean important = Boolean.TRUE.equals(media.projectMediaIsImportant());
+                if (media.projectMediaId() != null) {
+                    currentMediaById.get(media.projectMediaId()).update(media.projectMediaCaption(), important, i + 1);
+                    continue;
+                }
+                UploadedFile image = fileUtil.upload(mediaFiles.get(media.fileIndex()), StorageFolder.PROJECT);
+                newMedias.add(ProjectMedia.builder()
+                        .project(project)
+                        .originalName(image.originalName())
+                        .s3Key(image.s3Key())
+                        .size(image.size())
+                        .ext(image.ext())
+                        .caption(media.projectMediaCaption())
+                        .important(important)
+                        .priority(i + 1)
+                        .build());
+            }
+            projectMediaRepository.saveAll(newMedias);
+        }
+
+        // 9. 수정 로그 기록 (projectId)
+        log.info("프로젝트 수정 - projectId = {}", project.getId());
+
+        // 10. 응답 DTO로 변환
+        return UpdateProjectResponseDto.fromEntity(project);
+    }
+
+    // 수정시 최종 이미지 정보 검증
+    //      exc. 파일 10개 초과 (FILE_COUNT_EXCEED)
+    //      exc. projectMediaId, fileIndex 중 하나만 있지 않은 항목 / 이 프로젝트의 이미지가 아니거나 중복된 projectMediaId
+    //           / fileIndex 항목 수와 파일 수 불일치, 범위 밖 또는 중복 fileIndex (PROJECT_MEDIA_INVALID)
+    //      exc. 대표 이미지 2개 이상 (PROJECT_MEDIA_IMPORTANT_DUPLICATED)
+    private void validateUpdateProjectMedias(List<MultipartFile> files, List<UpdateProjectMediaItem> medias, List<ProjectMedia> currentMedias) {
+        if (files.size() > MAX_PROJECT_MEDIA_COUNT) {
+            throw new CustomException(ExceptionCode.FILE_COUNT_EXCEED);
+        }
+        Set<Long> currentMediaIds = currentMedias.stream().map(ProjectMedia::getId).collect(Collectors.toSet());
+        Set<Long> mediaIds = new HashSet<>();
+        Set<Integer> fileIndexes = new HashSet<>();
+        for (UpdateProjectMediaItem media : medias) {
+            boolean hasMediaId = media.projectMediaId() != null;
+            if (hasMediaId == (media.fileIndex() != null)) {
+                throw new CustomException(ExceptionCode.PROJECT_MEDIA_INVALID);
+            }
+            boolean valid = hasMediaId
+                    ? currentMediaIds.contains(media.projectMediaId()) && mediaIds.add(media.projectMediaId())
+                    : media.fileIndex() < files.size() && fileIndexes.add(media.fileIndex());
+            if (!valid) {
+                throw new CustomException(ExceptionCode.PROJECT_MEDIA_INVALID);
+            }
+        }
+        if (fileIndexes.size() != files.size()) {
+            throw new CustomException(ExceptionCode.PROJECT_MEDIA_INVALID);
+        }
+        if (medias.stream().filter(media -> Boolean.TRUE.equals(media.projectMediaIsImportant())).count() > 1) {
+            throw new CustomException(ExceptionCode.PROJECT_MEDIA_IMPORTANT_DUPLICATED);
+        }
+    }
+
+    // 날짜 문자열 변환 (YYYY-MM-DD 형식은 DTO에서 검증)
+    //      exc. 존재하지 않는 날짜면 에러 처리 (VALID_ERROR)
+    private LocalDate parseDate(String value) {
+        try {
+            return LocalDate.parse(value);
+        } catch (DateTimeParseException e) {
+            throw new CustomException(ExceptionCode.VALID_ERROR);
+        }
+    }
+
+    // 빈 문자열이면 null (수정시 값 지움)
+    private String emptyToNull(String value) {
+        return value.isEmpty() ? null : value;
     }
 
     // 파일, 이미지 정보 검증
