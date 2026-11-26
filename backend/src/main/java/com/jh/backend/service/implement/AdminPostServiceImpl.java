@@ -2,9 +2,6 @@ package com.jh.backend.service.implement;
 
 import com.jh.backend.common.enums.StorageFolder;
 import com.jh.backend.common.PageResponseDto;
-import com.jh.backend.common.enums.PostKeywordType;
-import com.jh.backend.common.enums.PostSortBy;
-import com.jh.backend.common.enums.SortDirection;
 import com.jh.backend.dto.post.item.CreatePostErrorItem;
 import com.jh.backend.dto.post.item.FindAllAdminPostsItem;
 import com.jh.backend.dto.post.item.FindPostMediaItem;
@@ -35,21 +32,18 @@ import com.jh.backend.util.file.UploadedFile;
 import com.jh.backend.util.login.LoginChecker;
 import com.jh.backend.util.markdown.MarkdownImageExtractor;
 import com.jh.backend.util.markdown.MarkdownImageExtractor.MarkdownImage;
+import com.jh.backend.util.post.PostReader;
 import com.jh.backend.util.skill.SkillReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -63,14 +57,13 @@ import java.util.stream.IntStream;
 public class AdminPostServiceImpl implements AdminPostService {
 
     private static final int MAX_CAPTION_LENGTH = 50;
-    private static final int DEFAULT_PAGE_NUMBER = 0;
-    private static final int DEFAULT_PAGE_SIZE = 10;
 
     private final AdminRepository adminRepository;
     private final PostRepository postRepository;
     private final PostSkillRepository postSkillRepository;
     private final PostMediaRepository postMediaRepository;
     private final SkillReader skillReader;
+    private final PostReader postReader;
     private final MarkdownImageExtractor markdownImageExtractor;
     private final LoginChecker loginChecker;
     private final FileUtil fileUtil;
@@ -193,45 +186,18 @@ public class AdminPostServiceImpl implements AdminPostService {
     @Transactional(readOnly = true)
     public PageResponseDto<FindAllAdminPostsItem> findAllAdminPosts(FindAllAdminPostsRequestDto dto) {
 
-        // 1. 페이지, 정렬 조건 정리
+        // 1. 게시글 페이지 조회 (PostReader)
         //      -> 기본값 : pageNumber 0, pageSize 10, sortBy createdAt, sortDir desc
-        //      -> createdAt은 등록일, postView는 조회수 기준
-        //      -> 값이 같으면 PK를 같은 방향으로 정렬 (페이지 이동시 순서 고정)
-        int pageNumber = dto.pageNumber() != null ? dto.pageNumber() : DEFAULT_PAGE_NUMBER;
-        int pageSize = dto.pageSize() != null ? dto.pageSize() : DEFAULT_PAGE_SIZE;
-        PostSortBy sortBy = dto.sortBy() != null ? PostSortBy.valueOf(dto.sortBy()) : PostSortBy.createdAt;
-        Sort.Direction direction = (dto.sortDir() != null ? SortDirection.valueOf(dto.sortDir()) : SortDirection.desc).getDirection();
-        PageRequest pageRequest = PageRequest.of(pageNumber, pageSize,
-                Sort.by(direction, sortBy.getProperty()).and(Sort.by(direction, "id")));
-
-        // 2. 검색 조건 정리
-        //      -> 검색어는 앞뒤 공백 제거 후 비어 있으면 검색 안 함
-        //      -> 검색 종류 없이 검색어만 있으면 제목+내용(TITLE_CONTENT)으로 검색
-        //      -> 대소문자 무시 부분 일치, %, _, \ 는 글자 그대로 검색되도록 escape 처리
-        String keyword = StringUtils.hasText(dto.keyword()) ? dto.keyword().strip() : null;
-        String keywordType = null;
-        String pattern = null;
-        if (keyword != null) {
-            keywordType = dto.keywordType() != null ? dto.keywordType() : PostKeywordType.TITLE_CONTENT.name();
-            pattern = "%" + escapeLike(keyword.toLowerCase(Locale.ROOT)) + "%";
-        }
-
-        // 3. 게시글 페이지 조회 (JPQL, count 쿼리 포함)
+        //      -> 검색어만 있으면 제목+내용(TITLE_CONTENT)으로 검색, 대소문자 무시 부분 일치
         //      -> 삭제된 게시글 제외 (@SQLRestriction)
-        //      -> SKILL 검색은 EXISTS 서브쿼리로 기술 스택 이름 비교 (게시글 중복 방지)
-        Page<Post> posts = postRepository.findAllBySearch(keywordType, pattern, pageRequest);
+        Page<Post> posts = postReader.readPage(dto.pageNumber(), dto.pageSize(), dto.sortBy(), dto.sortDir(),
+                dto.keywordType(), dto.keyword());
 
-        // 4. 게시글 기술 스택 조회 (IN 쿼리 1번, N+1 방지)
-        //      -> 조회된 게시글이 없으면 생략
+        // 2. 게시글 기술 스택 조회 (PostReader, IN 쿼리 1번)
         //      -> 게시글별 priority 오름차순
-        Map<Long, List<PostSkillItem>> skillsByPostId = posts.isEmpty() ? Map.of()
-                : postSkillRepository.findAllByPostIdIn(posts.map(Post::getId).toList()).stream()
-                        .collect(Collectors.groupingBy(postSkill -> postSkill.getPost().getId(),
-                                Collectors.mapping(postSkill -> PostSkillItem.fromEntity(postSkill, fileUtil.toUrl(postSkill.getSkill().getS3Key())),
-                                        Collectors.toList())));
+        Map<Long, List<PostSkillItem>> skillsByPostId = postReader.readSkillsByPostId(posts);
 
-        // 5. 응답 DTO로 변환
-        //      -> skillUrl은 s3 key를 공개 주소로 변환
+        // 3. 응답 DTO로 변환
         //      -> 범위를 넘은 페이지는 빈 목록
         return PageResponseDto.of(posts, posts.stream()
                 .map(post -> FindAllAdminPostsItem.fromEntity(post, skillsByPostId.getOrDefault(post.getId(), List.of())))
@@ -434,10 +400,5 @@ public class AdminPostServiceImpl implements AdminPostService {
         if (alt == null || alt.isBlank()) return null;
         String caption = alt.strip();
         return caption.length() <= MAX_CAPTION_LENGTH ? caption : caption.substring(0, MAX_CAPTION_LENGTH);
-    }
-
-    // LIKE 검색어 escape (\, %, _ 를 글자 그대로 검색)
-    private String escapeLike(String value) {
-        return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
     }
 }
