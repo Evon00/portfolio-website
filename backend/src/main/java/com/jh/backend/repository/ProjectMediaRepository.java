@@ -13,6 +13,9 @@ public interface ProjectMediaRepository extends JpaRepository<ProjectMedia, Long
     // 프로젝트 이미지 조회 (삭제된 이미지 제외, priority 오름차순, 같으면 PK 오름차순)
     List<ProjectMedia> findAllByProjectIdOrderByPriorityAscIdAsc(Long projectId);
 
+    // 프로젝트별 대표 이미지 (삭제된 이미지 제외, 프로젝트당 최대 1개 - 부분 유니크 인덱스)
+    List<ProjectMedia> findAllByProjectIdInAndImportantTrue(Collection<Long> projectIds);
+
     // 프로젝트별 이미지 수 (삭제된 이미지 제외, 이미지가 없는 프로젝트는 결과에 없음)
     @Query("""
             SELECT pm.project.id AS projectId, COUNT(pm) AS mediaCount FROM ProjectMedia pm
