@@ -33,6 +33,7 @@ import com.jh.backend.service.AdminProjectService;
 import com.jh.backend.util.file.FileUtil;
 import com.jh.backend.util.file.UploadedFile;
 import com.jh.backend.util.login.LoginChecker;
+import com.jh.backend.util.project.ProjectReader;
 import com.jh.backend.util.skill.SkillReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -69,6 +70,7 @@ public class AdminProjectServiceImpl implements AdminProjectService {
     private final ProjectSkillRepository projectSkillRepository;
     private final ProjectMediaRepository projectMediaRepository;
     private final SkillReader skillReader;
+    private final ProjectReader projectReader;
     private final LoginChecker loginChecker;
     private final FileUtil fileUtil;
 
@@ -210,15 +212,10 @@ public class AdminProjectServiceImpl implements AdminProjectService {
         Page<Project> projects = projectRepository.findAll(pageRequest);
         List<Long> projectIds = projects.map(Project::getId).toList();
 
-        // 3. 프로젝트 기술 스택 조회 (IN 쿼리 1번, N+1 방지)
+        // 3. 프로젝트 기술 스택 조회 (ProjectReader, IN 쿼리 1번)
         //      -> 조회된 프로젝트가 없으면 생략
         //      -> 프로젝트별 priority 오름차순
-        //      -> skillUrl은 s3 key를 공개 주소로 변환
-        Map<Long, List<ProjectSkillItem>> skillsByProjectId = projectIds.isEmpty() ? Map.of()
-                : projectSkillRepository.findAllByProjectIdIn(projectIds).stream()
-                        .collect(Collectors.groupingBy(projectSkill -> projectSkill.getProject().getId(),
-                                Collectors.mapping(projectSkill -> ProjectSkillItem.fromEntity(projectSkill, fileUtil.toUrl(projectSkill.getSkill().getS3Key())),
-                                        Collectors.toList())));
+        Map<Long, List<ProjectSkillItem>> skillsByProjectId = projectReader.readSkillsByProjectId(projectIds);
 
         // 4. 프로젝트별 이미지 수 조회 (GROUP BY 쿼리 1번)
         //      -> 조회된 프로젝트가 없으면 생략
