@@ -77,6 +77,8 @@ public enum ExceptionCode {
     //PROJECT
     PROJECT_NOT_FOUND("PROJECT_001", HttpStatus.NOT_FOUND, "프로젝트를 찾을 수 없습니다."),
     PROJECT_SLUG_DUPLICATED("PROJECT_002", HttpStatus.CONFLICT, "이미 사용 중인 프로젝트 슬러그입니다."),
+    PROJECT_MEDIA_INVALID("PROJECT_003", HttpStatus.BAD_REQUEST, "이미지 정보와 파일이 일치하지 않습니다."),
+    PROJECT_MEDIA_IMPORTANT_DUPLICATED("PROJECT_004", HttpStatus.BAD_REQUEST, "대표 이미지는 1개만 지정할 수 있습니다."),
 
     //SKILL
     SKILL_IN_USE("SKILL_001", HttpStatus.CONFLICT, "사용 중인 기술 스택은 삭제할 수 없습니다."),
