@@ -99,6 +99,37 @@ public class AdminProfileServiceImpl implements AdminProfileService {
         return new UploadProfileImageResponseDto(fileUtil.toUrl(admin.getProfileS3Key()));
     }
 
+    // 프로필 이미지 삭제
+    //      -> 등록된 이미지가 없어도 성공 처리 (멱등)
+    //      -> 커밋 후 프로필 캐시 삭제 (@CacheEvict, PROFILE)
+    @Override
+    @Transactional
+    @CacheEvict(cacheNames = CacheNames.PROFILE, allEntries = true)
+    public void deleteProfileImage() {
+
+        // 1. 로그인한 관리자 조회
+        //      -> 토큰의 관리자 PK 사용 (LoginChecker)
+        //      exc. 관리자 미존재시 에러 처리 (ADMIN_NOT_FOUND)
+        Long adminId = loginChecker.getAdminId();
+        Admin admin = adminRepository.findById(adminId).orElseThrow(
+                () -> new CustomException(ExceptionCode.ADMIN_NOT_FOUND));
+
+        // 2. 등록된 이미지가 없으면 종료
+        //      -> 변경할 값이 없으므로 UPDATE, S3 삭제 없이 성공 응답
+        String oldS3Key = admin.getProfileS3Key();
+        if (oldS3Key == null) {
+            return;
+        }
+
+        // 3. 프로필 이미지 제거 (Admin.deleteProfileImage)
+        //      -> s3 key, 크기, 확장자를 null로 변경
+        //      -> 기존 s3 key는 커밋 후 S3에서 삭제
+        //      -> 삭제 로그 기록 (adminId)
+        admin.deleteProfileImage();
+        fileUtil.delete(oldS3Key);
+        log.info("프로필 이미지 삭제 - adminId = {}", adminId);
+    }
+
     // 빈 문자열이면 null
     private String emptyToNull(String value) {
         return value.isEmpty() ? null : value;

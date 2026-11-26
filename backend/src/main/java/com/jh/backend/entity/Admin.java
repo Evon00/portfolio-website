@@ -90,4 +90,11 @@ public class Admin extends DefaultRecords {
         this.profileSize = profileSize;
         this.profileExt = profileExt;
     }
+
+    // 프로필 이미지 삭제
+    public void deleteProfileImage() {
+        this.profileS3Key = null;
+        this.profileSize = null;
+        this.profileExt = null;
+    }
 }

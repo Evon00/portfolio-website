@@ -12,4 +12,7 @@ public interface AdminProfileService {
 
     // 프로필 이미지 업로드
     UploadProfileImageResponseDto uploadProfileImage(MultipartFile file);
+
+    // 프로필 이미지 삭제
+    void deleteProfileImage();
 }

@@ -5,6 +5,7 @@ import com.jh.backend.dto.profile.request.UpdateProfileRequestDto;
 import com.jh.backend.dto.profile.response.UpdateProfileResponseDto;
 import com.jh.backend.dto.profile.response.UploadProfileImageResponseDto;
 import com.jh.backend.service.AdminProfileService;
+import com.jh.backend.swagger.profile.DeleteProfileImageSwaggerDocs;
 import com.jh.backend.swagger.profile.UpdateProfileSwaggerDocs;
 import com.jh.backend.swagger.profile.UploadProfileImageSwaggerDocs;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -13,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -44,5 +46,13 @@ public class AdminProfileController {
     public ResponseEntity<CommonApiResponse<UploadProfileImageResponseDto>> uploadProfileImage(
             @RequestPart MultipartFile file) {
         return ResponseEntity.ok(CommonApiResponse.ok(adminProfileService.uploadProfileImage(file)));
+    }
+
+    // 프로필 이미지 삭제
+    @DeleteProfileImageSwaggerDocs
+    @DeleteMapping("/image")
+    public ResponseEntity<CommonApiResponse<Void>> deleteProfileImage() {
+        adminProfileService.deleteProfileImage();
+        return ResponseEntity.ok(CommonApiResponse.ok());
     }
 }
