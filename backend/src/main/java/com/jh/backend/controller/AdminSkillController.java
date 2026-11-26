@@ -2,15 +2,20 @@ package com.jh.backend.controller;
 
 import com.jh.backend.common.CommonApiResponse;
 import com.jh.backend.dto.skill.request.CreateSkillRequestDto;
+import com.jh.backend.dto.skill.request.FindAllSkillsRequestDto;
 import com.jh.backend.dto.skill.response.CreateSkillResponseDto;
+import com.jh.backend.dto.skill.response.FindAllSkillsResponseDto;
 import com.jh.backend.service.AdminSkillService;
 import com.jh.backend.swagger.skill.CreateSkillSwaggerDocs;
+import com.jh.backend.swagger.skill.FindAllSkillsSwaggerDocs;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -33,5 +38,13 @@ public class AdminSkillController {
             @Valid @RequestPart CreateSkillRequestDto data,
             @RequestPart MultipartFile file) {
         return ResponseEntity.ok(CommonApiResponse.ok(adminSkillService.createSkill(data, file)));
+    }
+
+    // 기술 스택 목록 조회
+    @FindAllSkillsSwaggerDocs
+    @GetMapping
+    public ResponseEntity<CommonApiResponse<FindAllSkillsResponseDto>> findAllSkills(
+            @Valid @ParameterObject FindAllSkillsRequestDto dto) {
+        return ResponseEntity.ok(CommonApiResponse.ok(adminSkillService.findAllSkills(dto)));
     }
 }

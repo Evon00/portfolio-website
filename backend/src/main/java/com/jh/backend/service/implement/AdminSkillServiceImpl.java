@@ -1,8 +1,11 @@
 package com.jh.backend.service.implement;
 
 import com.jh.backend.common.enums.StorageFolder;
+import com.jh.backend.dto.skill.item.FindAllSkillsItem;
 import com.jh.backend.dto.skill.request.CreateSkillRequestDto;
+import com.jh.backend.dto.skill.request.FindAllSkillsRequestDto;
 import com.jh.backend.dto.skill.response.CreateSkillResponseDto;
+import com.jh.backend.dto.skill.response.FindAllSkillsResponseDto;
 import com.jh.backend.entity.Skill;
 import com.jh.backend.exception.CustomException;
 import com.jh.backend.exception.ExceptionCode;
@@ -14,7 +17,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+import java.util.Locale;
 
 @Slf4j
 @Service
@@ -61,5 +68,38 @@ public class AdminSkillServiceImpl implements AdminSkillService {
         // 5. 응답 DTO로 변환
         //      -> skillUrl은 s3 key를 공개 주소로 변환
         return CreateSkillResponseDto.fromEntity(skill, fileUtil.toUrl(skill.getS3Key()));
+    }
+
+    // 기술 스택 목록 조회
+    @Override
+    @Transactional(readOnly = true)
+    public FindAllSkillsResponseDto findAllSkills(FindAllSkillsRequestDto dto) {
+
+        // 1. 검색 조건 정리
+        //      -> 카테고리, 검색어의 앞뒤 공백 제거
+        //      -> 빈 값이면 조건 없음(null)으로 처리
+        //      -> 검색어의 %, _, \ 는 글자 그대로 검색되도록 escape 처리
+        String category = StringUtils.hasText(dto.skillCategory()) ? dto.skillCategory().strip() : null;
+        String namePattern = StringUtils.hasText(dto.keyword())
+                ? "%" + escapeLike(dto.keyword().strip().toLowerCase(Locale.ROOT)) + "%"
+                : null;
+
+        // 2. 기술 스택 목록 조회
+        //      -> 카테고리 : 정확히 일치
+        //      -> 검색어 : 이름 부분 일치 (대소문자 무시)
+        //      -> 등록일 내림차순, 같으면 PK 내림차순 (페이징 없음)
+        List<Skill> skills = skillRepository.findAllBySearch(category, namePattern);
+
+        // 3. 응답 DTO로 변환
+        //      -> skillUrl은 s3 key를 공개 주소로 변환
+        //      -> totalCount는 조회된 목록 개수
+        return FindAllSkillsResponseDto.from(skills.stream()
+                .map(skill -> FindAllSkillsItem.fromEntity(skill, fileUtil.toUrl(skill.getS3Key())))
+                .toList());
+    }
+
+    // LIKE 검색의 특수문자(\, %, _)를 글자 그대로 검색되도록 escape
+    private String escapeLike(String value) {
+        return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
     }
 }
