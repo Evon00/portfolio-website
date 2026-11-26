@@ -23,6 +23,10 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("UPDATE Post p SET p.view = p.view + 1 WHERE p.id = :postId")
     void increaseView(@Param("postId") Long postId);
 
+    // 전체 조회수 합계 (삭제된 게시글 제외, @SQLRestriction, 게시글이 없으면 0)
+    @Query("SELECT COALESCE(SUM(p.view), 0) FROM Post p")
+    long sumView();
+
     // 게시글 목록 검색 (삭제된 게시글 제외, 정렬은 Pageable)
     //      -> keywordType이 null이면 검색 안 함
     //      -> SKILL은 EXISTS로 기술 스택 이름 비교 (게시글 중복 방지)
