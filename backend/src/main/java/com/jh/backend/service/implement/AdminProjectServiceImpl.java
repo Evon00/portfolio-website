@@ -3,6 +3,7 @@ package com.jh.backend.service.implement;
 import com.jh.backend.common.PageResponseDto;
 import com.jh.backend.common.enums.StorageFolder;
 import com.jh.backend.dto.project.item.FindAllAdminProjectsItem;
+import com.jh.backend.dto.project.item.FindProjectMediaItem;
 import com.jh.backend.dto.project.item.ProjectSkillItem;
 import com.jh.backend.dto.project.item.CreateProjectMediaItem;
 import com.jh.backend.dto.project.request.CheckProjectSlugRequestDto;
@@ -10,6 +11,7 @@ import com.jh.backend.dto.project.request.CreateProjectRequestDto;
 import com.jh.backend.dto.project.request.FindAllAdminProjectsRequestDto;
 import com.jh.backend.dto.project.response.CheckProjectSlugResponseDto;
 import com.jh.backend.dto.project.response.CreateProjectResponseDto;
+import com.jh.backend.dto.project.response.FindProjectResponseDto;
 import com.jh.backend.entity.Admin;
 import com.jh.backend.entity.Project;
 import com.jh.backend.entity.ProjectMedia;
@@ -222,6 +224,39 @@ public class AdminProjectServiceImpl implements AdminProjectService {
                         mediaCountByProjectId.getOrDefault(project.getId(), 0L),
                         skillsByProjectId.getOrDefault(project.getId(), List.of())))
                 .toList());
+    }
+
+    // 프로젝트 상세 조회 (수정용)
+    //      -> 관리자 수정 화면용 (공개 상세 조회와 별도)
+    //      -> 경로 변수 projectId는 컨트롤러에서 @Positive 검증 (0 이하면 400)
+    @Override
+    @Transactional(readOnly = true)
+    public FindProjectResponseDto findProject(Long projectId) {
+
+        // 1. 프로젝트 조회
+        //      -> 삭제된 프로젝트 제외 (@SQLRestriction)
+        //      exc. 프로젝트 미존재시 에러 처리 (PROJECT_NOT_FOUND, 404)
+        Project project = projectRepository.findById(projectId).orElseThrow(
+                () -> new CustomException(ExceptionCode.PROJECT_NOT_FOUND));
+
+        // 2. 프로젝트 기술 스택 조회 (기존 findAllByProjectIdIn 재사용, 기술 스택 함께 조회)
+        //      -> priority 오름차순
+        //      -> skillUrl은 s3 key를 공개 주소로 변환
+        List<ProjectSkillItem> skills = projectSkillRepository.findAllByProjectIdIn(List.of(projectId)).stream()
+                .map(projectSkill -> ProjectSkillItem.fromEntity(projectSkill, fileUtil.toUrl(projectSkill.getSkill().getS3Key())))
+                .toList();
+
+        // 3. 프로젝트 이미지 조회
+        //      -> 삭제된 이미지 제외 (@SQLRestriction)
+        //      -> priority 오름차순, 같으면 PK 오름차순
+        //      -> projectMediaUrl은 s3 key를 공개 주소로 변환
+        List<FindProjectMediaItem> projectMedias = projectMediaRepository.findAllByProjectIdOrderByPriorityAscIdAsc(projectId).stream()
+                .map(media -> FindProjectMediaItem.fromEntity(media, fileUtil.toUrl(media.getS3Key())))
+                .toList();
+
+        // 4. 응답 DTO로 변환
+        //      -> 본문은 저장된 원문 그대로 응답
+        return FindProjectResponseDto.fromEntity(project, skills, projectMedias);
     }
 
     // 파일, 이미지 정보 검증

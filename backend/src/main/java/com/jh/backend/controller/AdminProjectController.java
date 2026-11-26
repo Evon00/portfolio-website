@@ -8,18 +8,22 @@ import com.jh.backend.dto.project.request.CreateProjectRequestDto;
 import com.jh.backend.dto.project.request.FindAllAdminProjectsRequestDto;
 import com.jh.backend.dto.project.response.CheckProjectSlugResponseDto;
 import com.jh.backend.dto.project.response.CreateProjectResponseDto;
+import com.jh.backend.dto.project.response.FindProjectResponseDto;
 import com.jh.backend.service.AdminProjectService;
 import com.jh.backend.swagger.project.CheckProjectSlugSwaggerDocs;
 import com.jh.backend.swagger.project.CreateProjectSwaggerDocs;
 import com.jh.backend.swagger.project.FindAllAdminProjectsSwaggerDocs;
+import com.jh.backend.swagger.project.FindProjectSwaggerDocs;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -60,5 +64,14 @@ public class AdminProjectController {
     public ResponseEntity<CommonApiResponse<PageResponseDto<FindAllAdminProjectsItem>>> findAllAdminProjects(
             @Valid @ParameterObject FindAllAdminProjectsRequestDto dto) {
         return ResponseEntity.ok(CommonApiResponse.ok(adminProjectService.findAllAdminProjects(dto)));
+    }
+
+    // 프로젝트 상세 조회 (수정용)
+    @FindProjectSwaggerDocs
+    @GetMapping("/{projectId}")
+    public ResponseEntity<CommonApiResponse<FindProjectResponseDto>> findProject(
+            @Positive(message = "프로젝트 PK는 0보다 큰 양수여야 합니다.")
+            @PathVariable Long projectId) {
+        return ResponseEntity.ok(CommonApiResponse.ok(adminProjectService.findProject(projectId)));
     }
 }
