@@ -32,4 +32,7 @@ public interface AdminPostService {
 
     // 게시글 수정
     UpdatePostResponseDto updatePost(Long postId, UpdatePostRequestDto dto);
+
+    // 게시글 삭제
+    void deletePost(Long postId);
 }

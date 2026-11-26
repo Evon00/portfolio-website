@@ -362,6 +362,33 @@ public class AdminPostServiceImpl implements AdminPostService {
         return UpdatePostResponseDto.fromEntity(post);
     }
 
+    // 게시글 삭제 (soft delete)
+    //      -> S3 파일, 게시글 기술 스택(jh_post_skill), 조회 로그는 유지 (복구 대비 / 통계 데이터)
+    //      -> 경로 변수 postId는 컨트롤러에서 @Positive 검증 (0 이하면 400)
+    @Override
+    @Transactional
+    public void deletePost(Long postId) {
+
+        // 1. 게시글 조회
+        //      -> 삭제된 게시글 제외 (@SQLRestriction)
+        //      exc. 게시글 미존재 또는 이미 삭제된 경우 에러 처리 (POST_NOT_FOUND, 404)
+        Post post = postRepository.findById(postId).orElseThrow(
+                () -> new CustomException(ExceptionCode.POST_NOT_FOUND));
+
+        // 2. 연결된 이미지 soft delete (변경 감지)
+        //      -> 게시글에 연결된 이미지 조회 (findAllByPostIdOrderByIdAsc, 삭제된 이미지 제외)
+        //      -> 각 이미지 delete() (deleted_at 기록, post_id·caption은 유지)
+        postMediaRepository.findAllByPostIdOrderByIdAsc(postId).forEach(PostMedia::delete);
+
+        // 3. 게시글 soft delete (변경 감지)
+        //      -> Post.delete() (deleted_at 기록)
+        //      -> 슬러그 부분 유니크 인덱스(WHERE deleted_at IS NULL)라 같은 슬러그 재사용 가능
+        post.delete();
+
+        // 4. 삭제 로그 기록 (postId)
+        log.info("게시글 삭제 - postId = {}", post.getId());
+    }
+
     // 게시글에 연결할 수 있는 이미지 조회 (요청 순서 유지)
     //      -> 연결되지 않은 이미지, postId 게시글에 이미 연결된 이미지만 사용 가능 (추가시 postId는 null)
     //      exc. 중복 ID가 있으면 에러 처리 (POST_MEDIA_DUPLICATED)

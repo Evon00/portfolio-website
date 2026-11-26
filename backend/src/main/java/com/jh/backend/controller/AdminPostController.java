@@ -15,6 +15,7 @@ import com.jh.backend.dto.post.response.UploadPostImageResponseDto;
 import com.jh.backend.service.AdminPostService;
 import com.jh.backend.swagger.post.CheckPostSlugSwaggerDocs;
 import com.jh.backend.swagger.post.CreatePostSwaggerDocs;
+import com.jh.backend.swagger.post.DeletePostSwaggerDocs;
 import com.jh.backend.swagger.post.FindAllAdminPostsSwaggerDocs;
 import com.jh.backend.swagger.post.FindPostSwaggerDocs;
 import com.jh.backend.swagger.post.UpdatePostSwaggerDocs;
@@ -27,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -95,5 +97,15 @@ public class AdminPostController {
             @PathVariable Long postId,
             @Valid @RequestBody UpdatePostRequestDto dto) {
         return ResponseEntity.ok(CommonApiResponse.ok(adminPostService.updatePost(postId, dto)));
+    }
+
+    // 게시글 삭제
+    @DeletePostSwaggerDocs
+    @DeleteMapping("/{postId}")
+    public ResponseEntity<CommonApiResponse<Void>> deletePost(
+            @Positive(message = "게시글 PK는 0보다 큰 양수여야 합니다.")
+            @PathVariable Long postId) {
+        adminPostService.deletePost(postId);
+        return ResponseEntity.ok(CommonApiResponse.ok());
     }
 }
