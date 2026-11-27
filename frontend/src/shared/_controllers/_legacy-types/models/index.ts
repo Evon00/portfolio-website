@@ -15,7 +15,6 @@ export type * from "./project-order-request";
 export type * from "./project-save-request";
 export type * from "./project-summary-response";
 export type * from "./skill-response";
-export type * from "./skill-save-request";
 export type * from "./slug-check-response";
 export type * from "./upload-complete-request";
 export type * from "./upload-complete-response";

@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { adminQueryKeys } from "@/shared/libs/api";
-import type { SkillResponse } from "@/shared/_controllers/_legacy-types";
-import { CATEGORY_LABEL, type SkillCategory } from "@/shared/_controllers/skill";
+import { CATEGORY_LABEL, type SkillCategory, type SkillView } from "@/shared/_controllers/skill";
 import { CategoryTag } from "@/shared/components/admin/category-tag";
 import { DataTable, Td, Th, Tr } from "@/shared/components/admin/data-table";
 import { useDeleteDialog } from "@/shared/components/admin/delete-dialog";
@@ -24,7 +23,7 @@ export function SkillTable() {
   const { data: skills, isPending, isError, refetch } = useSkillListQuery();
   const [category, setCategory] = useState<SkillCategory | "ALL">("ALL");
   const [keyword, setKeyword] = useState("");
-  const [dialog, setDialog] = useState<{ skill?: SkillResponse } | null>(null);
+  const [dialog, setDialog] = useState<{ skill?: SkillView } | null>(null);
   const remove = useDeleteDialog({
     noun: "기술 스택",
     action: deleteSkillAction,

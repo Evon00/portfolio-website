@@ -11,11 +11,7 @@ export async function uploadImage(
   purpose: UploadPurpose,
   onProgress?: (percent: number) => void,
 ): Promise<UploadCompleteResponse> {
-  if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-    throw new ApiError({ status: 400, message: "JPG, PNG, GIF, WebP, SVG 이미지만 올릴 수 있어요." });
-  }
-  const blob = await convertImage(file, MAX_EDGE[purpose]);
-  if (blob.size > MAX_UPLOAD_BYTES) throw new ApiError({ status: 400, message: "10MB 이하 이미지만 올릴 수 있어요." });
+  const blob = await prepareImage(file, purpose);
 
   const presign = await adminFetch<UploadPresignResponse>("/api/admin/uploads/presign", {
     json: { purpose, contentType: blob.type, size: blob.size },
@@ -30,8 +26,23 @@ export async function uploadImage(
   return isMock ? { ...completed, url: URL.createObjectURL(blob) } : completed;
 }
 
+/**
+ * 올리기 전 검사 · 변환(형식 확인 → WebP 변환 · 긴 변 상한 → 10MB 확인). 실패하면 화면에 보여 줄 문구를 담은 ApiError.
+ * 파일을 저장 요청에 함께 보내는 화면(기술 스택 아이콘)은 이것만 부르고, 결과를 서버 액션에 FormData로 넘긴다.
+ */
+export async function prepareImage(file: File, purpose: UploadPurpose): Promise<File> {
+  if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+    throw new ApiError({ status: 400, message: "JPG, PNG, GIF, WebP, SVG 이미지만 올릴 수 있어요." });
+  }
+  const blob = await convertImage(file, MAX_EDGE[purpose]);
+  if (blob.size > MAX_UPLOAD_BYTES) throw new ApiError({ status: 400, message: "10MB 이하 이미지만 올릴 수 있어요." });
+  if (blob === file) return file;
+  const extension = blob.type === "image/webp" ? "webp" : "jpg";
+  return new File([blob], `${file.name.replace(/\.[^.]+$/, "")}.${extension}`, { type: blob.type });
+}
+
 /** 움직이는 GIF·벡터(SVG)는 변환하지 않는다. 나머지는 긴 변을 줄이고 WebP(안 되면 JPEG)로 바꾼다. */
-async function convertImage(file: File, maxEdge: number): Promise<Blob> {
+async function convertImage(file: File, maxEdge: number): Promise<Blob | File> {
   if (file.type === "image/gif" || file.type === "image/svg+xml") return file;
   const bitmap = await createImageBitmap(file);
   const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));

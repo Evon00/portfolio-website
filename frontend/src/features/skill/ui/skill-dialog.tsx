@@ -1,11 +1,10 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { type FormEvent, useRef, useState } from "react";
-import { useImageUpload } from "@/shared/libs/upload/use-image-upload";
+import { type FormEvent, useEffect, useRef, useState } from "react";
+import { prepareImage } from "@/shared/libs/upload/upload-image";
 import { unwrapApiResult } from "@/shared/libs/api";
-import type { SkillResponse } from "@/shared/_controllers/_legacy-types";
-import { CATEGORY_LABEL, type SkillCategory } from "@/shared/_controllers/skill";
+import { CATEGORY_LABEL, type SkillCategory, type SkillView } from "@/shared/_controllers/skill";
 import { Button } from "@/shared/components/button";
 import { ButtonCompact } from "@/shared/components/button-compact";
 import { AlertDanger, FormLabel, FormMessage, Select, TextField } from "@/shared/components/form";
@@ -16,12 +15,13 @@ import { createSkillAction, updateSkillAction } from "@/shared/_controllers/skil
 
 // Figma 오버레이 · 기술 스택 추가 + Upload / Icon Tile. 수정도 같은 창을 쓴다.
 // 카테고리는 Category Tag 5종 중에서 고른다. 아이콘은 없어도 된다(없으면 화면에 이름만 보인다).
+// 아이콘은 고를 때 검사·변환만 하고 미리보기를 보여 준다. 파일은 저장할 때 이름·카테고리와 함께 보낸다.
 const CATEGORY_OPTIONS = (Object.keys(CATEGORY_LABEL) as SkillCategory[]).map((value) => ({
   value,
   label: CATEGORY_LABEL[value],
 }));
 
-type SkillDialogProps = { open: boolean; skill?: SkillResponse; onClose: () => void };
+type SkillDialogProps = { open: boolean; skill?: SkillView; onClose: () => void };
 
 export function SkillDialog(props: SkillDialogProps) {
   const { open, skill, onClose } = props;
@@ -37,16 +37,26 @@ function SkillForm({ skill, onClose }: Omit<SkillDialogProps, "open">) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(skill?.name ?? "");
   const [category, setCategory] = useState<SkillCategory>(skill?.category ?? "BACKEND");
-  const [icon, setIcon] = useState<{ imageId: number | null; url: string } | null>(
-    skill?.iconUrl ? { imageId: null, url: skill.iconUrl } : null,
+  // file이 있으면 새로 고른 아이콘(url은 미리보기 주소), 없으면 저장된 아이콘
+  const [icon, setIcon] = useState<{ file: File | null; url: string } | null>(
+    skill?.iconUrl ? { file: null, url: skill.iconUrl } : null,
   );
-  const iconUpload = useImageUpload("skill", "아이콘을 올리지 못했어요.");
+  const [iconPreparing, setIconPreparing] = useState(false);
+  const [iconError, setIconError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
+
+  // 미리보기 주소(blob:)는 바뀌거나 창이 닫힐 때 돌려준다
+  const previewUrl = icon?.file ? icon.url : null;
+  useEffect(() => () => void (previewUrl && URL.revokeObjectURL(previewUrl)), [previewUrl]);
 
   const save = useMutation({
     mutationFn: async () => {
-      const request = { name: name.trim(), category, iconImageId: icon?.imageId ?? null, iconUrl: icon?.url ?? null };
-      return unwrapApiResult(await (skill ? updateSkillAction(skill.skillId, request) : createSkillAction(request)));
+      const form = new FormData();
+      form.set("name", name.trim());
+      form.set("category", category);
+      if (icon?.file) form.set("icon", icon.file);
+      if (skill?.iconUrl && !icon) form.set("deleteIcon", "true");
+      return unwrapApiResult(await (skill ? updateSkillAction(skill.skillId, form) : createSkillAction(form)));
     },
     onSuccess: async () => {
       // 기술 이름·아이콘은 게시글·프로젝트·프로필·대시보드에도 보인다.
@@ -56,9 +66,16 @@ function SkillForm({ skill, onClose }: Omit<SkillDialogProps, "open">) {
   });
 
   async function pickIcon(file: File) {
-    iconUpload.clearError();
-    const uploaded = await iconUpload.upload(file);
-    if (uploaded) setIcon({ imageId: uploaded.imageId, url: uploaded.url });
+    setIconError(null);
+    setIconPreparing(true);
+    try {
+      const prepared = await prepareImage(file, "skill");
+      setIcon({ file: prepared, url: URL.createObjectURL(prepared) });
+    } catch (failure) {
+      setIconError(failure instanceof Error ? failure.message : "아이콘을 올리지 못했어요.");
+    } finally {
+      setIconPreparing(false);
+    }
   }
 
   function submit(event: FormEvent) {
@@ -109,14 +126,14 @@ function SkillForm({ skill, onClose }: Omit<SkillDialogProps, "open">) {
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              disabled={iconUpload.uploading}
+              disabled={iconPreparing}
               className="flex size-24 flex-col items-center justify-center gap-1.5 rounded-xl bg-background-04 disabled:opacity-60"
             >
               <span className="flex size-7 items-center justify-center rounded-xl bg-content-02 text-content-inverse">
                 <Icon name="plus" size={14} />
               </span>
               <span className="text-[11px] leading-4 text-content-03">
-                {iconUpload.uploading ? "올리는 중…" : "아이콘 추가"}
+                {iconPreparing ? "올리는 중…" : "아이콘 추가"}
               </span>
             </button>
           )}
@@ -128,7 +145,7 @@ function SkillForm({ skill, onClose }: Omit<SkillDialogProps, "open">) {
             장당 10MB 이하 · 없으면 이름만 보여요
           </p>
         </div>
-        {iconUpload.error && <FormMessage status="error">{iconUpload.error}</FormMessage>}
+        {iconError && <FormMessage status="error">{iconError}</FormMessage>}
         <input
           ref={fileRef}
           type="file"
@@ -172,7 +189,7 @@ function SkillForm({ skill, onClose }: Omit<SkillDialogProps, "open">) {
         <ButtonCompact onClick={onClose} className="h-11 px-4">
           취소
         </ButtonCompact>
-        <Button type="submit" size="M" disabled={save.isPending || iconUpload.uploading}>
+        <Button type="submit" size="M" disabled={save.isPending || iconPreparing}>
           {skill ? "저장하기" : "추가하기"}
         </Button>
       </div>

@@ -17,9 +17,7 @@ import * as projectMock from "./_mock/project";
 import type * as ProjectApi from "./project/project.api";
 export const project = projectMock satisfies typeof ProjectApi;
 
-import * as skillMock from "./_mock/skill";
-import type * as SkillApi from "./skill/skill.api";
-export const skill = skillMock satisfies typeof SkillApi;
+export * as skill from "./skill/skill.api";
 
 import * as uploadMock from "./_mock/upload";
 import type * as UploadApi from "./upload/upload.api";

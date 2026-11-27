@@ -72,6 +72,19 @@ function unwrapSuccessBody(body: unknown): unknown {
   return body;
 }
 
+/**
+ * Spring multipart 요청 본문을 만든다. JSON은 `data` 파트(`@RequestPart data`, application/json),
+ * 파일은 파트 이름별로 붙인다(없거나 빈 파일은 붙이지 않는다). 결과를 apiClient의 body로 넘긴다.
+ */
+export function toMultipartBody(data: object, files: Record<string, Blob | null | undefined> = {}) {
+  const body = new FormData();
+  body.append("data", new Blob([JSON.stringify(data)], { type: "application/json" }));
+  for (const [name, file] of Object.entries(files)) {
+    if (file && file.size > 0) body.append(name, file);
+  }
+  return body;
+}
+
 type ApiClient = <T>(path: string, options?: ApiClientOptions) => Promise<T>;
 
 function createApiClient(getAuthHeaders?: () => Promise<Record<string, string>>): ApiClient {
