@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useSkillListQuery } from "@/shared/_controllers/skill";
-import type { SkillResponse } from "@/shared/_generated";
+import type { SkillResponse } from "@/shared/_controllers/_legacy-types";
 import { useReorder } from "@/shared/hooks";
 import { CATEGORY_LABEL } from "@/shared/_controllers/skill";
 import { CategoryTag } from "@/shared/components/admin/category-tag";

@@ -7,7 +7,7 @@ import { type FormEvent, useState } from "react";
 import { clearDraft, useSaveDraftOnExpire, useStoredDraft } from "@/features/auth/hooks/use-session-draft";
 import { SkillPicker } from "@/features/skill/ui/skill-picker";
 import { adminQueryKeys, isApiError, unwrapApiResult } from "@/shared/libs/api";
-import type { PostDetailResponse, PostSaveRequest } from "@/shared/_generated";
+import type { PostDetailResponse, PostSaveRequest } from "@/shared/_controllers/_legacy-types";
 import { EditorPlaceholder } from "@/shared/components/admin/editor-placeholder";
 import { AdminPageHeader } from "@/shared/components/admin/page-header";
 import { AdminPanel } from "@/shared/components/admin/panel";

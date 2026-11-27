@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { adminQueryKeys } from "@/shared/libs/api";
-import type { SkillResponse } from "@/shared/_generated";
+import type { SkillResponse } from "@/shared/_controllers/_legacy-types";
 import { CATEGORY_LABEL, type SkillCategory } from "@/shared/_controllers/skill";
 import { CategoryTag } from "@/shared/components/admin/category-tag";
 import { DataTable, Td, Th, Tr } from "@/shared/components/admin/data-table";

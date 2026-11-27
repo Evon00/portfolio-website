@@ -1,4 +1,4 @@
-import type { ProfileResponse } from "@/shared/_generated";
+import type { ProfileResponse } from "@/shared/_controllers/_legacy-types";
 import { mockSkills as s } from "./skills";
 
 // Figma 메인 히어로 · 푸터 문구

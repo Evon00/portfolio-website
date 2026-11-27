@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { adminFetch, adminQueryKeys } from "@/shared/libs/api";
-import type { ProfileResponse } from "@/shared/_generated";
+import type { ProfileResponse } from "@/shared/_controllers/_legacy-types";
 
 export function useProfileQuery() {
   return useQuery({

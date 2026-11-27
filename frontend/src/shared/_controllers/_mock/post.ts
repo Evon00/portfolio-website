@@ -13,7 +13,7 @@ import type {
   SlugCheckResponse,
   UpdatePostPath,
   ViewCountResponse,
-} from "@/shared/_generated";
+} from "@/shared/_controllers/_legacy-types";
 import { type MockPost, mockDb, mockDelay, nextMockId, resolveSkills } from "./store";
 
 // 게시글 목 구현(서버 메모리). 인자 · 반환 모양은 post/post.api.ts(실제 구현)와 같다(data-source.server.ts의 satisfies가 확인한다).

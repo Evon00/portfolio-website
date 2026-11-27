@@ -1,5 +1,5 @@
 import { ApiError, adminFetch } from "@/shared/libs/api";
-import type { UploadCompleteResponse, UploadPresignResponse } from "@/shared/_generated";
+import type { UploadCompleteResponse, UploadPresignResponse } from "@/shared/_controllers/_legacy-types";
 import { ACCEPTED_IMAGE_TYPES, MAX_EDGE, MAX_UPLOAD_BYTES, type UploadPurpose } from "./upload-rules";
 
 // 이미지 업로드 (설계 문서 4절). 화면은 uploadImage 하나만 부른다.

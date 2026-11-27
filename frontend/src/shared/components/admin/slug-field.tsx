@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { adminFetch } from "@/shared/libs/api";
-import type { SlugCheckResponse } from "@/shared/_generated";
+import type { SlugCheckResponse } from "@/shared/_controllers/_legacy-types";
 import { SLUG_PATTERN } from "@/shared/utils";
 import { Button } from "@/shared/components/button";
 import { FormLabel, FormMessage, TextField } from "@/shared/components/form";

@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useRef, useState } from "react";
 import { useImageUpload } from "@/shared/libs/upload/use-image-upload";
 import { unwrapApiResult } from "@/shared/libs/api";
-import type { SkillResponse } from "@/shared/_generated";
+import type { SkillResponse } from "@/shared/_controllers/_legacy-types";
 import { CATEGORY_LABEL, type SkillCategory } from "@/shared/_controllers/skill";
 import { Button } from "@/shared/components/button";
 import { ButtonCompact } from "@/shared/components/button-compact";

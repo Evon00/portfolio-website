@@ -5,7 +5,7 @@ import type {
   UploadCompleteResponse,
   UploadPresignRequest,
   UploadPresignResponse,
-} from "@/shared/_generated";
+} from "@/shared/_controllers/_legacy-types";
 import { adminApiClient } from "@/shared/libs/api/client";
 
 export type CompleteUploadBody = UploadCompleteRequest;

@@ -1,4 +1,4 @@
-import type { ProfileResponse } from "@/shared/_generated";
+import type { ProfileResponse } from "@/shared/_controllers/_legacy-types";
 import { Button } from "@/shared/components/button";
 import { Container } from "@/shared/components/container";
 import { PaperAsset } from "@/shared/components/paper/paper-asset";

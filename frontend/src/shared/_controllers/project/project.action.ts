@@ -1,6 +1,6 @@
 "use server";
 
-import type { ProjectOrderRequest, ProjectSaveRequest } from "@/shared/_generated";
+import type { ProjectOrderRequest, ProjectSaveRequest } from "@/shared/_controllers/_legacy-types";
 import { invalidateProject } from "@/shared/libs/api/invalidate";
 import { withAdminAction } from "@/shared/libs/auth/guard";
 import { createProject, deleteProject, updateProject, updateProjectOrder } from "./project.service";

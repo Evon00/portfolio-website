@@ -1,7 +1,7 @@
 import "server-only";
 
-import type { SkillResponse, SkillSaveRequest } from "@/shared/_generated";
-import type { DeleteSkillPath, UpdateSkillPath } from "@/shared/_generated";
+import type { SkillResponse, SkillSaveRequest } from "@/shared/_controllers/_legacy-types";
+import type { DeleteSkillPath, UpdateSkillPath } from "@/shared/_controllers/_legacy-types";
 import { adminApiClient } from "@/shared/libs/api/client";
 
 export type CreateSkillBody = SkillSaveRequest;

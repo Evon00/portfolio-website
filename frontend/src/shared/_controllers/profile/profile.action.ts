@@ -1,6 +1,6 @@
 "use server";
 
-import type { ProfileSaveRequest } from "@/shared/_generated";
+import type { ProfileSaveRequest } from "@/shared/_controllers/_legacy-types";
 import { invalidateProfile } from "@/shared/libs/api/invalidate";
 import { withAdminAction } from "@/shared/libs/auth/guard";
 import { updateProfile } from "./profile.service";

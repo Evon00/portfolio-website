@@ -12,7 +12,7 @@ import type {
   ProjectSummaryResponse,
   SlugCheckResponse,
   UpdateProjectPath,
-} from "@/shared/_generated";
+} from "@/shared/_controllers/_legacy-types";
 import { type MockProject, mockDb, mockDelay, nextMockId, resolveSkills } from "./store";
 
 // 프로젝트 목 구현(서버 메모리). 인자 · 반환 모양은 project/project.api.ts(실제 구현)와 같다(data-source.server.ts의 satisfies가 확인한다).

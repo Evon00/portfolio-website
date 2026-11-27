@@ -1,4 +1,4 @@
-import type { DashboardSkillShare } from "@/shared/_generated";
+import type { DashboardSkillShare } from "@/shared/_controllers/_legacy-types";
 
 // Figma Components › Admin / Donut Chart. 상위 5개 + 기타, 가운데 합계.
 const COLORS = [

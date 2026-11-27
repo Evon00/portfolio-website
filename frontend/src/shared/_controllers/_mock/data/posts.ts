@@ -1,4 +1,4 @@
-import type { PostDetailResponse } from "@/shared/_generated";
+import type { PostDetailResponse } from "@/shared/_controllers/_legacy-types";
 import { mockSkills as s } from "./skills";
 
 // Figma 블로그 목록 · 상세 문구. 상세 본문은 "Redis setIfAbsent로 중복 신청 막기"(Figma 블로그 상세)만 시안 그대로이고

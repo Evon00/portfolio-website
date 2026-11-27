@@ -1,6 +1,6 @@
 "use server";
 
-import type { SkillSaveRequest } from "@/shared/_generated";
+import type { SkillSaveRequest } from "@/shared/_controllers/_legacy-types";
 import { invalidateSkills } from "@/shared/libs/api/invalidate";
 import { withAdminAction } from "@/shared/libs/auth/guard";
 import { createSkill, deleteSkill, updateSkill } from "./skill.service";

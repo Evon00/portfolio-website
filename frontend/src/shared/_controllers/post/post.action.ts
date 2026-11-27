@@ -1,6 +1,6 @@
 "use server";
 
-import type { PostSaveRequest, ViewCountResponse } from "@/shared/_generated";
+import type { PostSaveRequest, ViewCountResponse } from "@/shared/_controllers/_legacy-types";
 import { type ApiResult, apiFailure, apiSuccess } from "@/shared/libs/api";
 import { invalidatePost } from "@/shared/libs/api/invalidate";
 import { withAdminAction } from "@/shared/libs/auth/guard";

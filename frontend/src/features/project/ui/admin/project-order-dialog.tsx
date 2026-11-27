@@ -3,7 +3,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { adminQueryKeys, unwrapApiResult } from "@/shared/libs/api";
-import type { ProjectSummaryResponse } from "@/shared/_generated";
+import type { ProjectSummaryResponse } from "@/shared/_controllers/_legacy-types";
 import { useReorder } from "@/shared/hooks";
 import { OrderItem } from "@/shared/components/admin/order-item";
 import { StarToggle } from "@/shared/components/admin/star-toggle";

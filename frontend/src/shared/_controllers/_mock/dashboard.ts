@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { DashboardResponse, DashboardSkillShare } from "@/shared/_generated";
+import type { DashboardResponse, DashboardSkillShare } from "@/shared/_controllers/_legacy-types";
 import { mockDb, mockDelay, resolveSkills } from "./store";
 
 // 대시보드 목 구현(서버 메모리). 인자 · 반환 모양은 dashboard/dashboard.api.ts(실제 구현)와 같다(data-source.server.ts의 satisfies가 확인한다).

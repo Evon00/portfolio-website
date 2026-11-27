@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { ProfileResponse, ProfileSaveRequest } from "@/shared/_generated";
+import type { ProfileResponse, ProfileSaveRequest } from "@/shared/_controllers/_legacy-types";
 import { publicApiClient, adminApiClient } from "@/shared/libs/api/client";
 
 export type GetProfileResponse = ProfileResponse;

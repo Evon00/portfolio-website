@@ -1,4 +1,4 @@
-import type { ProjectDetailResponse, ProjectSummaryResponse } from "@/shared/_generated";
+import type { ProjectDetailResponse, ProjectSummaryResponse } from "@/shared/_controllers/_legacy-types";
 import { mockSkills as s } from "./skills";
 
 // Figma 프로젝트 목록 · 상세 · 메인 캐러셀 문구. 이미지는 public/mock/images의 "MOCK IMAGE" 표시 그림이다.

@@ -1,4 +1,4 @@
-import type { SkillResponse } from "@/shared/_generated";
+import type { SkillResponse } from "@/shared/_controllers/_legacy-types";
 
 // Figma _assets › Skill Logos의 기술 22종. 아이콘은 Logo/Mono SVG를 public/mock/skills에 내보냈다.
 // 공식 단색 로고가 없는 것(OAuth2·AES·systemd·Tika·Logback·토스페이먼츠)은 Figma의 약자형 아이콘이다.

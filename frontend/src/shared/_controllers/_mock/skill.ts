@@ -1,7 +1,7 @@
 import "server-only";
 
 import { ApiError } from "@/shared/libs/api";
-import type { DeleteSkillPath, SkillResponse, SkillSaveRequest, UpdateSkillPath } from "@/shared/_generated";
+import type { DeleteSkillPath, SkillResponse, SkillSaveRequest, UpdateSkillPath } from "@/shared/_controllers/_legacy-types";
 import { mockDb, mockDelay, nextMockId } from "./store";
 
 // 기술 스택 목 구현(서버 메모리). 인자 · 반환 모양은 skill/skill.api.ts(실제 구현)와 같다(data-source.server.ts의 satisfies가 확인한다).

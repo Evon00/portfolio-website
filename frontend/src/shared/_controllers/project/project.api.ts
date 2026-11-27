@@ -6,14 +6,14 @@ import type {
   ProjectSaveRequest,
   ProjectSummaryResponse,
   SlugCheckResponse,
-} from "@/shared/_generated";
+} from "@/shared/_controllers/_legacy-types";
 import type {
   DeleteProjectPath,
   GetProjectByIdPath,
   GetProjectBySlugPath,
   IsProjectSlugAvailableQuery,
   UpdateProjectPath,
-} from "@/shared/_generated";
+} from "@/shared/_controllers/_legacy-types";
 import { publicApiClient, adminApiClient } from "@/shared/libs/api/client";
 
 export type CreateProjectBody = ProjectSaveRequest;

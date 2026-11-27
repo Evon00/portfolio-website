@@ -6,7 +6,7 @@ import type {
   PostSummaryResponse,
   SlugCheckResponse,
   ViewCountResponse,
-} from "@/shared/_generated";
+} from "@/shared/_controllers/_legacy-types";
 import type {
   DeletePostPath,
   GetPostByIdPath,
@@ -14,7 +14,7 @@ import type {
   IncreasePostViewPath,
   IsPostSlugAvailableQuery,
   UpdatePostPath,
-} from "@/shared/_generated";
+} from "@/shared/_controllers/_legacy-types";
 import { publicApiClient, adminApiClient } from "@/shared/libs/api/client";
 
 export type CreatePostBody = PostSaveRequest;

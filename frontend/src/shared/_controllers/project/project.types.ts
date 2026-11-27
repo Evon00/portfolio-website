@@ -1,4 +1,4 @@
-import type { ProjectSummaryResponse } from "@/shared/_generated";
+import type { ProjectSummaryResponse } from "@/shared/_controllers/_legacy-types";
 import type { SkillView } from "@/shared/components/skill";
 
 // 프로젝트 화면용 타입과, 그 타입을 만드는 변환·표기 함수.

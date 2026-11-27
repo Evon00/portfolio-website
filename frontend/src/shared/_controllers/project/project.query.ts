@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { adminFetch, adminQueryKeys } from "@/shared/libs/api";
-import type { ProjectDetailResponse, ProjectSummaryResponse } from "@/shared/_generated";
+import type { ProjectDetailResponse, ProjectSummaryResponse } from "@/shared/_controllers/_legacy-types";
 
 // 어드민 프로젝트 조회 (라우트 핸들러). 저장·삭제·순서는 project.action.ts의 서버 액션을 쓴다.
 export function useProjectListQuery() {

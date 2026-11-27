@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { UploadCompleteResponse } from "@/shared/_generated";
+import type { UploadCompleteResponse } from "@/shared/_controllers/_legacy-types";
 import { uploadImage } from "./upload-image";
 import type { UploadPurpose } from "./upload-rules";
 

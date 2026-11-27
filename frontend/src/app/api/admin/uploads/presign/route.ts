@@ -1,6 +1,6 @@
 import { presignUpload } from "@/shared/_controllers/upload/index.server";
 import { ApiError } from "@/shared/libs/api";
-import type { UploadPresignRequest } from "@/shared/_generated";
+import type { UploadPresignRequest } from "@/shared/_controllers/_legacy-types";
 import { withAdminRoute } from "@/shared/libs/auth/guard";
 
 export const POST = withAdminRoute(async (request) => {

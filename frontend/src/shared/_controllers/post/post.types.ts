@@ -1,4 +1,4 @@
-import type { PostSummaryResponse } from "@/shared/_generated";
+import type { PostSummaryResponse } from "@/shared/_controllers/_legacy-types";
 import type { SkillView } from "@/shared/components/skill";
 
 // 게시글 화면용 타입과, 그 타입을 만드는 변환·검색 함수.

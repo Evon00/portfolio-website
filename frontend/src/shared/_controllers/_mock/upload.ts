@@ -6,7 +6,7 @@ import type {
   UploadCompleteResponse,
   UploadPresignRequest,
   UploadPresignResponse,
-} from "@/shared/_generated";
+} from "@/shared/_controllers/_legacy-types";
 import { mockDelay, nextMockId } from "./store";
 import { ACCEPTED_IMAGE_TYPES, MAX_UPLOAD_BYTES } from "@/shared/libs/upload/upload-rules";
 

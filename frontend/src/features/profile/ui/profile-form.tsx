@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, type ReactNode, useRef, useState } from "react";
 import { useImageUpload } from "@/shared/libs/upload/use-image-upload";
 import { adminQueryKeys, unwrapApiResult } from "@/shared/libs/api";
-import type { ProfileResponse } from "@/shared/_generated";
+import type { ProfileResponse } from "@/shared/_controllers/_legacy-types";
 import { AdminPageHeader } from "@/shared/components/admin/page-header";
 import { AdminPanel, PanelHeader } from "@/shared/components/admin/panel";
 import { AdminLoadError, AdminLoading } from "@/shared/components/admin/state";

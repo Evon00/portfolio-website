@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { PostDetailResponse, ProfileResponse, ProjectDetailResponse, SkillResponse } from "@/shared/_generated";
+import type { PostDetailResponse, ProfileResponse, ProjectDetailResponse, SkillResponse } from "@/shared/_controllers/_legacy-types";
 import { mockPosts } from "./data/posts";
 import { mockProfile } from "./data/profile";
 import { mockProjects } from "./data/projects";

@@ -1,7 +1,7 @@
 import { isPostSlugAvailable } from "@/shared/_controllers/post/index.server";
 import { isProjectSlugAvailable } from "@/shared/_controllers/project/index.server";
 import { ApiError } from "@/shared/libs/api";
-import type { SlugCheckResponse } from "@/shared/_generated";
+import type { SlugCheckResponse } from "@/shared/_controllers/_legacy-types";
 import { withAdminRoute } from "@/shared/libs/auth/guard";
 
 // GET /api/admin/slug-check?type=post|project&slug=
