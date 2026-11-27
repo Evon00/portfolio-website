@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import type { ApiErrorBody } from "@/shared/libs/api/error";
-import { SESSION_COOKIE, safeAdminPath, verifySessionToken } from "@/shared/libs/auth/session-token";
+import { REFRESH_COOKIE, readTokenPayload, safeAdminPath } from "@/shared/libs/auth/session-token";
 
 // 어드민 1차 방어 (설계 문서 5절). 최종 확인은 서버 액션·라우트 핸들러의 guard(withAdminAction · withAdminRoute)가 한다.
 // - /api/admin/*: 세션이 없으면 401 JSON
@@ -15,7 +15,7 @@ function noStore(response: NextResponse) {
 
 export async function proxy(request: NextRequest) {
   const { pathname, search, searchParams } = request.nextUrl;
-  const session = await verifySessionToken(request.cookies.get(SESSION_COOKIE)?.value);
+  const session = readTokenPayload(request.cookies.get(REFRESH_COOKIE)?.value);
 
   if (pathname === "/admin/login") {
     return session

@@ -6,8 +6,8 @@ import "server-only";
 //   .api.ts는 `import type`으로만 불러 목 단계에서는 실행 경로(API 클라이언트)에 들어오지 않는다.
 // - Spring 연결: 도메인마다 세 줄(목 import · type import · export)을 `export * as <도메인> from "./<도메인>/<도메인>.api";` 한 줄로 바꾼다.
 // - 모든 줄을 바꾼 뒤의 정리 순서는 AGENTS.md "Spring 연결 순서".
-// auth는 로그인 API가 아직 정해지지 않아 생성된 .api.ts가 없다(설계 문서 16-1 16번). 목 그대로 쓴다.
-export * as auth from "./_mock/auth";
+// auth는 Set-Cookie를 읽어야 해서 생성기가 아닌 직접 쓴 .api.ts다.
+export * as auth from "./auth/auth.api";
 
 import * as postMock from "./_mock/post";
 import type * as PostApi from "./post/post.api";
