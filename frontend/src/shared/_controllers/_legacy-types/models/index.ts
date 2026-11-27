@@ -5,8 +5,6 @@ export type * from "./error-response";
 export type * from "./post-detail-response";
 export type * from "./post-save-request";
 export type * from "./post-summary-response";
-export type * from "./profile-response";
-export type * from "./profile-save-request";
 export type * from "./project-detail-response";
 export type * from "./project-image-request";
 export type * from "./project-image-response";

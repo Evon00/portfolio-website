@@ -26,7 +26,8 @@ export function MobileMenuButton() {
   return <IconButton icon="menu" label="메뉴 열기" size={44} onClick={() => setOpen(true)} className="md:hidden" />;
 }
 
-type MobileMenuProps = { name: string; email: string; githubUrl: string };
+// GitHub · 이메일은 비어 있으면 그 버튼을 숨긴다.
+type MobileMenuProps = { name: string; email: string | null; githubUrl: string | null };
 
 export function MobileMenu(props: MobileMenuProps) {
   const { name, email, githubUrl } = props;
@@ -96,14 +97,20 @@ export function MobileMenu(props: MobileMenuProps) {
         <hr className="border-0 border-t-[1.5px] border-dashed border-primary-muted" />
         {/* 메뉴를 닫은 뒤 푸터 연락처로 스크롤한다 */}
         <ContactButton icon="mail" beforeScroll={() => setOpen(false)} className="w-full" />
-        <div className="flex gap-2">
-          <Button href={githubUrl} variant="outline" size="M" icon="code" className="flex-1">
-            GitHub
-          </Button>
-          <Button href={`mailto:${email}`} variant="outline" size="M" icon="mail" className="flex-1">
-            이메일
-          </Button>
-        </div>
+        {(githubUrl || email) && (
+          <div className="flex gap-2">
+            {githubUrl && (
+              <Button href={githubUrl} variant="outline" size="M" icon="code" className="flex-1">
+                GitHub
+              </Button>
+            )}
+            {email && (
+              <Button href={`mailto:${email}`} variant="outline" size="M" icon="mail" className="flex-1">
+                이메일
+              </Button>
+            )}
+          </div>
+        )}
         <PaperAsset name="blob-lavender-surprised" className="top-[468px] right-2.5 h-[100px] w-[150px]" />
       </div>
     </div>

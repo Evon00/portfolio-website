@@ -23,9 +23,7 @@ import * as uploadMock from "./_mock/upload";
 import type * as UploadApi from "./upload/upload.api";
 export const upload = uploadMock satisfies typeof UploadApi;
 
-import * as profileMock from "./_mock/profile";
-import type * as ProfileApi from "./profile/profile.api";
-export const profile = profileMock satisfies typeof ProfileApi;
+export * as profile from "./profile/profile.api";
 
 import * as dashboardMock from "./_mock/dashboard";
 import type * as DashboardApi from "./dashboard/dashboard.api";

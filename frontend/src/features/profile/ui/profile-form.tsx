@@ -4,18 +4,18 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, type ReactNode, useRef, useState } from "react";
 import { useImageUpload } from "@/shared/libs/upload/use-image-upload";
 import { adminQueryKeys, unwrapApiResult } from "@/shared/libs/api";
-import type { ProfileResponse } from "@/shared/_controllers/_legacy-types";
 import { AdminPageHeader } from "@/shared/components/admin/page-header";
 import { AdminPanel, PanelHeader } from "@/shared/components/admin/panel";
 import { AdminLoadError, AdminLoading } from "@/shared/components/admin/state";
 import { Button } from "@/shared/components/button";
 import { AlertDanger, FormLabel, FormMessage, Textarea, TextField } from "@/shared/components/form";
 import { PaperAsset } from "@/shared/components/paper/paper-asset";
-import { updateProfileAction } from "@/shared/_controllers/profile/profile.action";
-import { useProfileQuery } from "@/shared/_controllers/profile";
+import { type ProfileChanges, updateProfileAction } from "@/shared/_controllers/profile/profile.action";
+import { type ProfileView, useProfileQuery } from "@/shared/_controllers/profile";
 import { CoreSkillEditor } from "./core-skill-editor";
 
 // Figma 관리자 · 프로필. 저장하면 메인 히어로·푸터(profile 태그)를 다시 만든다.
+// 저장은 Spring PATCH 방식이다: 불러온 값과 비교해 바뀐 필드만 보내고, 바뀐 게 없으면 요청하지 않는다.
 export function ProfileEditor() {
   const { data, isPending, isError, refetch } = useProfileQuery();
   if (isPending) {
@@ -38,16 +38,37 @@ export function ProfileEditor() {
 }
 
 type Errors = Partial<Record<"name" | "intro" | "githubUrl" | "email", string>>;
-type ProfileFormValues = Pick<ProfileResponse, "name" | "intro" | "githubUrl" | "email" | "avatarUrl" | "coreSkills">;
+// GitHub · 이메일은 입력칸이라 빈 값을 ""로 다룬다(비우고 저장하면 Spring에 ""를 보내 값을 지운다).
+type ProfileFormValues = Omit<ProfileView, "githubUrl" | "email"> & { githubUrl: string; email: string };
 
-function ProfileForm({ profile }: { profile: ProfileResponse }) {
+// Spring 검증과 같은 한도
+const MAX_LENGTH = { name: 10, intro: 200, githubUrl: 300, email: 300 } as const;
+
+/** 불러온 프로필과 비교해 바뀐 필드만 모은다(Spring PATCH: 보내지 않은 필드는 기존 값 유지). */
+function toProfileChanges(profile: ProfileView, values: ProfileFormValues): ProfileChanges {
+  const next = {
+    name: values.name.trim(),
+    // 줄바꿈은 메인 소개글에서 그대로 쓰이므로 \r\n·\r을 \n으로 맞추고 앞뒤 공백만 지운다.
+    intro: values.intro.replace(/\r\n?/g, "\n").trim(),
+    githubUrl: values.githubUrl.trim(),
+    email: values.email.trim(),
+  };
+  const changes: ProfileChanges = {};
+  if (next.name !== profile.name) changes.name = next.name;
+  if (next.intro !== profile.intro) changes.intro = next.intro;
+  if (next.githubUrl !== (profile.githubUrl ?? "")) changes.githubUrl = next.githubUrl;
+  if (next.email !== (profile.email ?? "")) changes.email = next.email;
+  return changes;
+}
+
+function ProfileForm({ profile }: { profile: ProfileView }) {
   const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState<ProfileFormValues>(() => ({
     name: profile.name,
     intro: profile.intro,
-    githubUrl: profile.githubUrl,
-    email: profile.email,
+    githubUrl: profile.githubUrl ?? "",
+    email: profile.email ?? "",
     avatarUrl: profile.avatarUrl,
     coreSkills: profile.coreSkills,
   }));
@@ -58,19 +79,15 @@ function ProfileForm({ profile }: { profile: ProfileResponse }) {
   const [errors, setErrors] = useState<Errors>({});
 
   const save = useMutation({
-    mutationFn: async () =>
-      unwrapApiResult(
-        await updateProfileAction({
-          name: name.trim(),
-          // 줄바꿈은 메인 소개글에서 그대로 쓰이므로 \r\n·\r을 \n으로 맞추고 앞뒤 공백만 지운다.
-          intro: intro.replace(/\r\n?/g, "\n").trim(),
-          githubUrl: githubUrl.trim(),
-          email: email.trim(),
-          avatarUrl,
-          coreSkillIds: coreSkills.map((skill) => skill.skillId),
-        }),
-      ),
-    onSuccess: (saved) => queryClient.setQueryData(adminQueryKeys.profile.all, saved),
+    mutationFn: async () => {
+      const changes = toProfileChanges(profile, form);
+      if (Object.keys(changes).length === 0) return false;
+      const saved = unwrapApiResult(await updateProfileAction(changes));
+      queryClient.setQueryData<ProfileView>(adminQueryKeys.profile.all, (current) =>
+        current ? { ...current, ...saved } : current,
+      );
+      return true;
+    },
   });
 
   async function pickAvatar(file: File) {
@@ -83,10 +100,15 @@ function ProfileForm({ profile }: { profile: ProfileResponse }) {
     event.preventDefault();
     const next: Errors = {};
     if (!name.trim()) next.name = "이름을 입력해 주세요.";
+    else if (name.trim().length > MAX_LENGTH.name) next.name = `이름은 ${MAX_LENGTH.name}자까지 쓸 수 있어요.`;
     if (!intro.trim()) next.intro = "소개 문구를 입력해 주세요.";
-    if (githubUrl && !/^https?:\/\/\S+$/.test(githubUrl.trim()))
+    else if (intro.trim().length > MAX_LENGTH.intro) next.intro = `소개 문구는 ${MAX_LENGTH.intro}자까지 쓸 수 있어요.`;
+    if (githubUrl.trim() && !/^https:\/\/\S+$/.test(githubUrl.trim()))
       next.githubUrl = "https://로 시작하는 주소를 입력해 주세요.";
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) next.email = "이메일 형식을 확인해 주세요.";
+    else if (githubUrl.trim().length > MAX_LENGTH.githubUrl)
+      next.githubUrl = `GitHub 주소는 ${MAX_LENGTH.githubUrl}자까지 쓸 수 있어요.`;
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) next.email = "이메일 형식을 확인해 주세요.";
+    else if (email.trim().length > MAX_LENGTH.email) next.email = `이메일은 ${MAX_LENGTH.email}자까지 쓸 수 있어요.`;
     setErrors(next);
     if (Object.keys(next).length === 0) save.mutate();
   }
@@ -108,7 +130,9 @@ function ProfileForm({ profile }: { profile: ProfileResponse }) {
       />
       {save.error && <AlertDanger>{save.error.message}</AlertDanger>}
       {save.isSuccess && !save.isPending && (
-        <FormMessage status="success">저장했어요. 메인 화면에 바로 반영돼요.</FormMessage>
+        <FormMessage status={save.data ? "success" : "help"}>
+          {save.data ? "저장했어요. 메인 화면에 바로 반영돼요." : "바뀐 내용이 없어요."}
+        </FormMessage>
       )}
 
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,500px)]">

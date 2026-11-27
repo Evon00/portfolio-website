@@ -5,12 +5,13 @@ import { PaperAsset } from "@/shared/components/paper/paper-asset";
 import { ScrollTopLink } from "@/shared/components/scroll-top-link";
 
 // Figma Components › Footer. 연락처. 콘텐츠 최대폭 1120, 768 미만은 Mobile.
+// GitHub · 이메일은 비어 있으면 그 줄을 숨긴다.
 // 바탕: primary-light 위에 종이 질감 100px 타일을 multiply로 겹친다. 위쪽에 캐릭터 둘이 걸쳐 있다.
 export type SiteFooterProps = {
   name: string;
   intro: string;
-  email: string;
-  githubUrl: string;
+  email: string | null;
+  githubUrl: string | null;
 };
 
 export function Footer(props: SiteFooterProps) {
@@ -33,12 +34,16 @@ export function Footer(props: SiteFooterProps) {
             <p className="text-body-l text-content-01">{intro}</p>
           </div>
           <ul className="flex flex-col gap-1 md:w-[380px]">
-            <ContactRow icon="mail" label="EMAIL" href={`mailto:${email}`}>
-              {email}
-            </ContactRow>
-            <ContactRow icon="code" label="GITHUB" href={githubUrl}>
-              {githubUrl.replace(/^https?:\/\//, "")}
-            </ContactRow>
+            {email && (
+              <ContactRow icon="mail" label="EMAIL" href={`mailto:${email}`}>
+                {email}
+              </ContactRow>
+            )}
+            {githubUrl && (
+              <ContactRow icon="code" label="GITHUB" href={githubUrl}>
+                {githubUrl.replace(/^https?:\/\//, "")}
+              </ContactRow>
+            )}
             <ContactRow icon="pencil" label="BLOG" href="/blog">
               블로그 글 보러 가기 →
             </ContactRow>

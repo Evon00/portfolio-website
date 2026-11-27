@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useSkillListQuery } from "@/shared/_controllers/skill";
-import type { SkillResponse } from "@/shared/_controllers/_legacy-types";
+import type { CoreSkillView } from "@/shared/_controllers/profile";
 import { useReorder } from "@/shared/hooks";
 import { CATEGORY_LABEL } from "@/shared/_controllers/skill";
 import { CategoryTag } from "@/shared/components/admin/category-tag";
@@ -15,7 +15,7 @@ import { SkillLogo } from "@/shared/components/skill";
 import { cn } from "@/shared/utils";
 
 // Figma 관리자 · 프로필 › 메인에 보일 핵심 기술 스택. Order Item(Skill) 목록 + 검색 결과 Skill Option.
-type CoreSkillEditorProps = { value: SkillResponse[]; onChange: (skills: SkillResponse[]) => void };
+type CoreSkillEditorProps = { value: CoreSkillView[]; onChange: (skills: CoreSkillView[]) => void };
 
 export function CoreSkillEditor({ value, onChange }: CoreSkillEditorProps) {
   const { data: skills = [] } = useSkillListQuery();
@@ -24,7 +24,7 @@ export function CoreSkillEditor({ value, onChange }: CoreSkillEditorProps) {
   const selectedIds = new Set(value.map((skill) => skill.skillId));
   const q = query.trim().toLowerCase();
   const options = skills.filter((skill) => !q || skill.name.toLowerCase().includes(q));
-  const toggle = (skill: SkillResponse) =>
+  const toggle = (skill: CoreSkillView) =>
     onChange(
       selectedIds.has(skill.skillId) ? value.filter((item) => item.skillId !== skill.skillId) : [...value, skill],
     );

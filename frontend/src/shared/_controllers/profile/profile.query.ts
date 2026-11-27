@@ -2,11 +2,11 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { adminFetch, adminQueryKeys } from "@/shared/libs/api";
-import type { ProfileResponse } from "@/shared/_controllers/_legacy-types";
+import type { ProfileView } from "./profile.types";
 
 export function useProfileQuery() {
   return useQuery({
     queryKey: adminQueryKeys.profile.all,
-    queryFn: () => adminFetch<ProfileResponse>("/api/admin/profile"),
+    queryFn: () => adminFetch<ProfileView>("/api/admin/profile"),
   });
 }

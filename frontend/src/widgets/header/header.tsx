@@ -9,8 +9,8 @@ import { NavItem } from "./nav-item";
 // 콘텐츠 최대폭 1120. 연락하기는 주소를 바꾸지 않고 푸터 연락처로 스크롤한다(ContactButton).
 export type SiteHeaderProps = {
   name: string;
-  email: string;
-  githubUrl: string;
+  email: string | null;
+  githubUrl: string | null;
 };
 
 export function Header(props: SiteHeaderProps) {
