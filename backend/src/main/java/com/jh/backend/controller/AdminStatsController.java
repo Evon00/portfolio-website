@@ -2,10 +2,13 @@ package com.jh.backend.controller;
 
 import com.jh.backend.common.CommonApiResponse;
 import com.jh.backend.dto.stats.request.FindPopularPostsRequestDto;
+import com.jh.backend.dto.stats.request.FindSkillStatsRequestDto;
 import com.jh.backend.dto.stats.response.FindPopularPostsResponseDto;
+import com.jh.backend.dto.stats.response.FindSkillStatsResponseDto;
 import com.jh.backend.dto.stats.response.FindStatsSummaryResponseDto;
 import com.jh.backend.service.AdminStatsService;
 import com.jh.backend.swagger.stats.FindPopularPostsSwaggerDocs;
+import com.jh.backend.swagger.stats.FindSkillStatsSwaggerDocs;
 import com.jh.backend.swagger.stats.FindStatsSummarySwaggerDocs;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -39,5 +42,13 @@ public class AdminStatsController {
     public ResponseEntity<CommonApiResponse<FindPopularPostsResponseDto>> findPopularPosts(
             @Valid @ParameterObject FindPopularPostsRequestDto dto) {
         return ResponseEntity.ok(CommonApiResponse.ok(adminStatsService.findPopularPosts(dto)));
+    }
+
+    // 기술 스택 비율 통계
+    @FindSkillStatsSwaggerDocs
+    @GetMapping("/skill")
+    public ResponseEntity<CommonApiResponse<FindSkillStatsResponseDto>> findSkillStats(
+            @Valid @ParameterObject FindSkillStatsRequestDto dto) {
+        return ResponseEntity.ok(CommonApiResponse.ok(adminStatsService.findSkillStats(dto)));
     }
 }

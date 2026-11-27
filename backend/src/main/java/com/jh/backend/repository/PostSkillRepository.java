@@ -1,6 +1,7 @@
 package com.jh.backend.repository;
 
 import com.jh.backend.entity.PostSkill;
+import com.jh.backend.repository.projection.SkillUsageCount;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -18,6 +19,18 @@ public interface PostSkillRepository extends JpaRepository<PostSkill, Long> {
             WHERE ps.skill.id = :skillId AND p.deletedAt IS NULL
             """)
     long countBySkillId(@Param("skillId") Long skillId);
+
+    // 기술 스택별 사용 수 (삭제된 게시글 제외, 사용 수 내림차순, 같으면 skillId 오름차순)
+    @Query("""
+            SELECT s.id AS skillId, s.name AS skillName, COUNT(ps) AS usageCount
+            FROM PostSkill ps
+            JOIN ps.skill s
+            JOIN ps.post p
+            WHERE p.deletedAt IS NULL
+            GROUP BY s.id, s.name
+            ORDER BY COUNT(ps) DESC, s.id ASC
+            """)
+    List<SkillUsageCount> countAllGroupBySkill();
 
     // 게시글 목록의 기술 스택 (기술 스택 함께 조회, 게시글별 priority 오름차순)
     @Query("""
