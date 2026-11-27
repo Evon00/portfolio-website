@@ -60,20 +60,16 @@ async function parseResponseBody(response: Response, parseJson?: ApiClientOption
 
 /**
  * 성공 응답 본문에서 실제 데이터를 꺼낸다. 모든 성공 응답이 여기를 한 번 지난다.
- * 응답 감싸기 형식(예: `{ code, message, data }`)이 정해지면 이 함수 안만 고친다. 지금은 그대로 통과시킨다.
+ * Spring은 모든 응답을 `{ isSuccess, code, message, data }`(CommonApiResponse)로 감싼다. `data`만 돌려준다.
+ * 데이터 없는 성공 응답은 `data`가 빠져 있으므로 null이다.
+ * 목록은 `data`가 페이지 응답(`{ pageNumber, pageSize, totalPages, totalElements, content, … }`)이고, 타입은 생성기가 만든다.
+ * 생성기(`scripts/controller-generator`)도 응답 타입을 `data` 기준으로 잡으므로, 형식이 바뀌면 두 곳을 같이 고친다.
  */
 function unwrapSuccessBody(body: unknown): unknown {
+  if (body && typeof body === "object" && "isSuccess" in body) {
+    return (body as { data?: unknown }).data ?? null;
+  }
   return body;
-}
-
-/**
- * 목록 응답에서 항목 배열을 꺼낸다. 목록을 부르는 `<도메인>.api.ts`가 쓴다.
- * 목록 페이지 형식(예: `{ content, totalElements, totalPages }`)이 정해지면 이 함수 안만 고쳐서, 부르는 쪽은 바뀌지 않게 한다.
- * 그래서 입력은 형식을 가정하지 않는 `unknown`으로 받는다. 지금은 배열을 그대로 통과시킨다.
- * 페이지 형식이 정해지면 항목과 함께 페이지 정보(전체 개수 · 페이지 수)를 돌려줘야 할 수 있다. 그때 반환 모양을 정한다.
- */
-export function unwrapListBody<T>(body: unknown): T[] {
-  return body as T[];
 }
 
 type ApiClient = <T>(path: string, options?: ApiClientOptions) => Promise<T>;

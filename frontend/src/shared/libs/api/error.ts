@@ -11,7 +11,8 @@ export type ApiErrorBody = { code?: string; message?: string };
 
 /**
  * Spring 오류 응답 본문 → ApiErrorBody. 백엔드 오류 형식을 프론트 모양으로 바꾸는 곳은 여기 한 곳이다(`client.ts`가 부른다).
- * 백엔드 형식이 정해지면 여기만 고친다. 400 검증 오류의 필드 정보도 형식이 정해지면 여기서 꺼낸다.
+ * Spring 오류는 `{ isSuccess: false, code, message, data? }`(CommonApiResponse)다. 예: `{ code: "POST_001", message: "…" }`.
+ * 400 검증 오류는 필드 정보 없이 첫 번째 오류 문구가 `message`로 온다(code `COMMON_400`).
  */
 export function toApiErrorBody(data: unknown): ApiErrorBody | undefined {
   if (!data || typeof data !== "object") return undefined;
