@@ -87,6 +87,7 @@ public enum ExceptionCode {
     SKILL_NAME_DUPLICATED("SKILL_003", HttpStatus.CONFLICT, "이미 등록된 기술 스택 이름입니다."),
     SKILL_ID_DUPLICATED("SKILL_004", HttpStatus.BAD_REQUEST, "중복된 기술 스택이 포함되어 있습니다."),
     SKILL_ID_INVALID("SKILL_005", HttpStatus.BAD_REQUEST, "존재하지 않는 기술 스택이 포함되어 있습니다."),
+    SKILL_ICON_REQUEST_INVALID("SKILL_006", HttpStatus.BAD_REQUEST, "아이콘 교체와 삭제는 함께 요청할 수 없습니다."),
 
     //  service  //
     ;

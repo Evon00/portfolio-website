@@ -29,11 +29,13 @@ import java.lang.annotation.Target;
                 | `skillId` | `Long` | ✅ | 기술 스택 PK (Path) |
                 | `skillName` | `String` | ❌ | 기술 스택 이름 (최대 100자, 보내면 공백 불가, 다른 기술 스택과 대소문자 무시 중복 불가) |
                 | `skillCategory` | `String` | ❌ | 기술 스택 카테고리 (최대 100자, 보내면 공백 불가) |
+                | `deleteIcon` | `Boolean` | ❌ | 아이콘 삭제 여부 (true면 삭제, 보내지 않거나 false면 유지) |
                 | `file` | `MultipartFile` | ❌ | 새 아이콘 (JPG, PNG, GIF, WEBP, SVG / 10MB 이하) |
 
                 - 이름, 카테고리의 앞뒤 공백은 제거하고 저장합니다.
                 - 파일을 보내지 않거나 빈 파일이면 기존 아이콘을 유지합니다.
-                - 아이콘을 교체하면 기존 아이콘 파일은 삭제됩니다.
+                - `deleteIcon`이 true면 아이콘을 삭제합니다. 새 파일과 함께 보내면 400입니다.
+                - 아이콘을 교체하거나 삭제하면 기존 아이콘 파일은 삭제됩니다.
 
                 ---
 
@@ -43,7 +45,7 @@ import java.lang.annotation.Target;
                 | `skillId` | `Long` | 기술 스택 PK |
                 | `skillName` | `String` | 기술 스택 이름 |
                 | `skillCategory` | `String` | 기술 스택 카테고리 |
-                | `skillUrl` | `String` | 기술 스택 아이콘 URL |
+                | `skillUrl` | `String` | 기술 스택 아이콘 URL (없으면 null) |
                 | `createdAt` | `OffsetDateTime` | 생성일 |
                 """,
         security = @SecurityRequirement(name = "Authorization")
@@ -55,6 +57,7 @@ import java.lang.annotation.Target;
         ExceptionCode.FILE_SIZE_EXCEED,
         ExceptionCode.SKILL_NOT_FOUND,
         ExceptionCode.SKILL_NAME_DUPLICATED,
+        ExceptionCode.SKILL_ICON_REQUEST_INVALID,
         ExceptionCode.API_BAD_GATEWAY
 })
 public @interface UpdateSkillSwaggerDocs {

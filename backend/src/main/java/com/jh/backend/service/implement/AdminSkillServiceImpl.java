@@ -164,15 +164,24 @@ public class AdminSkillServiceImpl implements AdminSkillService {
             throw new CustomException(ExceptionCode.SKILL_NAME_DUPLICATED);
         }
 
-        // 4. 아이콘 교체
-        //      -> 파일이 없거나 빈 파일이면 기존 아이콘 유지
-        //      exc. 용량 초과, 허용하지 않는 형식이면 에러 처리 (FileUtil에서 검증)
-        //      -> 새 파일은 롤백되면 S3에서 삭제
-        //      -> 기존 파일은 커밋 이후 S3에서 삭제
-        if (file != null && !file.isEmpty()) {
-            String oldS3Key = skill.getS3Key();
+        // 4. 아이콘 교체 또는 삭제
+        //      exc. 새 파일과 deleteIcon=true를 함께 보내면 에러 처리 (SKILL_ICON_REQUEST_INVALID)
+        //      -> 새 파일이 있으면 교체 (용량, 형식은 FileUtil에서 검증, 새 파일은 롤백되면 S3에서 삭제)
+        //      -> deleteIcon이 true면 아이콘 삭제 (아이콘이 없으면 변경 없음)
+        //      -> 파일이 없거나 빈 파일이고 deleteIcon이 true가 아니면 기존 아이콘 유지
+        //      -> 교체, 삭제 모두 기존 파일은 커밋 이후 S3에서 삭제
+        boolean hasFile = file != null && !file.isEmpty();
+        boolean deleteIcon = dto != null && Boolean.TRUE.equals(dto.deleteIcon());
+        if (hasFile && deleteIcon) {
+            throw new CustomException(ExceptionCode.SKILL_ICON_REQUEST_INVALID);
+        }
+        String oldS3Key = skill.getS3Key();
+        if (hasFile) {
             UploadedFile icon = fileUtil.upload(file, StorageFolder.SKILL);
             skill.updateIcon(icon.originalName(), icon.s3Key(), icon.size(), icon.ext());
+            fileUtil.delete(oldS3Key);
+        } else if (deleteIcon && oldS3Key != null) {
+            skill.deleteIcon();
             fileUtil.delete(oldS3Key);
         }
 

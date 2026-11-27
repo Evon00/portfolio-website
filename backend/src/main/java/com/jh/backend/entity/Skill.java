@@ -77,4 +77,9 @@ public class Skill extends DefaultRecords {
         this.size = size;
         this.ext = ext;
     }
+
+    // 아이콘 삭제
+    public void deleteIcon() {
+        updateIcon(null, null, null, null);
+    }
 }
