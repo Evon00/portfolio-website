@@ -20,7 +20,7 @@ public record FindAllAdminProjectsItem(
         @Schema(description = "프로젝트 시작일", example = "2026-07-02")
         LocalDate projectStartDate,
 
-        @Schema(description = "프로젝트 종료일 (진행 중이면 null)", example = "2026-09-30")
+        @Schema(description = "프로젝트 종료일 (진행 중이면 null)", nullable = true, example = "2026-09-30")
         LocalDate projectEndDate,
 
         @Schema(description = "프로젝트 순서 (오름차순 정렬)", example = "1")

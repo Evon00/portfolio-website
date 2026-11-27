@@ -14,7 +14,7 @@ public record FindProfileItem(
         @Schema(description = "기술 스택 카테고리", example = "Backend")
         String skillCategory,
 
-        @Schema(description = "기술 스택 아이콘 URL", example = "https://cdn.example.com/prod/skill/9f1c2d3e-4b5a-6c7d-8e9f-0a1b2c3d4e5f.svg")
+        @Schema(description = "기술 스택 아이콘 URL", nullable = true, example = "https://cdn.example.com/prod/skill/9f1c2d3e-4b5a-6c7d-8e9f-0a1b2c3d4e5f.svg")
         String skillUrl,
 
         @Schema(description = "핵심 기술 스택 순서 (1부터)", example = "1")

@@ -18,7 +18,7 @@ public record FindProjectMediaItem(
         @Schema(description = "파일 크기", example = "1.2MB")
         String projectMediaSize,
 
-        @Schema(description = "이미지 설명 (없으면 null)", example = "메인 화면")
+        @Schema(description = "이미지 설명 (없으면 null)", nullable = true, example = "메인 화면")
         String projectMediaCaption,
 
         @Schema(description = "대표 이미지 여부", example = "true")

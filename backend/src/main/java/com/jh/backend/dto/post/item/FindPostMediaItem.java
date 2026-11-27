@@ -12,7 +12,7 @@ public record FindPostMediaItem(
         @Schema(description = "게시글 이미지 URL", example = "https://cdn.example.com/prod/post/9f1c2d3e-4b5a-6c7d-8e9f-0a1b2c3d4e5f.png")
         String postMediaUrl,
 
-        @Schema(description = "이미지 캡션 (없으면 null)", example = "중복 신청 흐름")
+        @Schema(description = "이미지 캡션 (없으면 null)", nullable = true, example = "중복 신청 흐름")
         String postMediaCaption
 ) {
 

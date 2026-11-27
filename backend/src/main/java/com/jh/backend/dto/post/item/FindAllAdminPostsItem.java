@@ -20,7 +20,7 @@ public record FindAllAdminPostsItem(
         @Schema(description = "조회수", example = "1284")
         Long postView,
 
-        @Schema(description = "본문 수정일 (수정 전이면 null)", example = "2026-11-13T10:00:00+09:00")
+        @Schema(description = "본문 수정일 (수정 전이면 null)", nullable = true, example = "2026-11-13T10:00:00+09:00")
         OffsetDateTime postModifiedAt,
 
         @Schema(description = "등록일", example = "2026-11-12T09:00:00+09:00")

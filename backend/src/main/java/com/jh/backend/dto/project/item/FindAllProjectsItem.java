@@ -23,19 +23,19 @@ public record FindAllProjectsItem(
         @Schema(description = "프로젝트 시작일", example = "2026-07-02")
         LocalDate projectStartDate,
 
-        @Schema(description = "프로젝트 종료일 (진행 중이면 null)", example = "2026-09-30")
+        @Schema(description = "프로젝트 종료일 (진행 중이면 null)", nullable = true, example = "2026-09-30")
         LocalDate projectEndDate,
 
-        @Schema(description = "GitHub 주소 (없으면 null)", example = "https://github.com/example/knu-robotics")
+        @Schema(description = "GitHub 주소 (없으면 null)", nullable = true, example = "https://github.com/example/knu-robotics")
         String projectGithubUrl,
 
         @Schema(description = "GitHub 레포지토리 공개 여부 (false면 자물쇠 표시)", example = "false")
         boolean projectGithubIsPublic,
 
-        @Schema(description = "사이트 주소 (없으면 null)", example = "https://robotics.knu.ac.kr")
+        @Schema(description = "사이트 주소 (없으면 null)", nullable = true, example = "https://robotics.knu.ac.kr")
         String projectUrl,
 
-        @Schema(description = "대표 이미지 URL (없으면 null)", example = "https://cdn.example.com/prod/project/9f1c2d3e-4b5a-6c7d-8e9f-0a1b2c3d4e5f.png")
+        @Schema(description = "대표 이미지 URL (없으면 null)", nullable = true, example = "https://cdn.example.com/prod/project/9f1c2d3e-4b5a-6c7d-8e9f-0a1b2c3d4e5f.png")
         String projectMediaUrl,
 
         @Schema(description = "기술 스택 (projectSkillPriority 오름차순)")

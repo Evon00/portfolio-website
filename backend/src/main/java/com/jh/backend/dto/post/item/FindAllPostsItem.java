@@ -20,7 +20,7 @@ public record FindAllPostsItem(
         @Schema(description = "게시글 슬러그", example = "redis-setifabsent-lock")
         String postSlug,
 
-        @Schema(description = "썸네일 URL (본문 첫 번째 업로드 이미지, 없으면 null)", example = "https://cdn.example.com/dev/post/1.png")
+        @Schema(description = "썸네일 URL (본문 첫 번째 업로드 이미지, 없으면 null)", nullable = true, example = "https://cdn.example.com/dev/post/1.png")
         String postThumbnailUrl,
 
         @Schema(description = "조회수", example = "1105")

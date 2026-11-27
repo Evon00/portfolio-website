@@ -24,13 +24,13 @@ public record FindPostBySlugResponseDto(
         @Schema(description = "게시글 슬러그", example = "redis-setifabsent-lock")
         String postSlug,
 
-        @Schema(description = "썸네일 URL (본문 첫 번째 업로드 이미지, 없으면 null)", example = "https://cdn.example.com/dev/post/1.png")
+        @Schema(description = "썸네일 URL (본문 첫 번째 업로드 이미지, 없으면 null)", nullable = true, example = "https://cdn.example.com/dev/post/1.png")
         String postThumbnailUrl,
 
         @Schema(description = "조회수 (이번 조회 반영)", example = "1105")
         Long postView,
 
-        @Schema(description = "본문 수정일 (수정 전이면 null)", example = "2026-11-13T10:00:00+09:00")
+        @Schema(description = "본문 수정일 (수정 전이면 null)", nullable = true, example = "2026-11-13T10:00:00+09:00")
         OffsetDateTime postModifiedAt,
 
         @Schema(description = "등록일", example = "2026-10-16T09:00:00+09:00")

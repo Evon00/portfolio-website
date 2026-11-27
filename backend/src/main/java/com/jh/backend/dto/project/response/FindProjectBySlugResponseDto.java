@@ -28,16 +28,16 @@ public record FindProjectBySlugResponseDto(
         @Schema(description = "프로젝트 시작일", example = "2026-07-02")
         LocalDate projectStartDate,
 
-        @Schema(description = "프로젝트 종료일 (진행 중이면 null)", example = "2026-09-30")
+        @Schema(description = "프로젝트 종료일 (진행 중이면 null)", nullable = true, example = "2026-09-30")
         LocalDate projectEndDate,
 
-        @Schema(description = "GitHub 주소 (없으면 null)", example = "https://github.com/example/knu-robotics")
+        @Schema(description = "GitHub 주소 (없으면 null)", nullable = true, example = "https://github.com/example/knu-robotics")
         String projectGithubUrl,
 
         @Schema(description = "GitHub 레포지토리 공개 여부 (false면 자물쇠 표시)", example = "false")
         boolean projectGithubIsPublic,
 
-        @Schema(description = "사이트 주소 (없으면 null)", example = "https://robotics.knu.ac.kr")
+        @Schema(description = "사이트 주소 (없으면 null)", nullable = true, example = "https://robotics.knu.ac.kr")
         String projectUrl,
 
         @Schema(description = "기술 스택 (projectSkillPriority 오름차순)")

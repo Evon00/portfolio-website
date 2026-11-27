@@ -12,7 +12,7 @@ public record FindProjectBySlugMediaItem(
         @Schema(description = "프로젝트 이미지 URL", example = "https://cdn.example.com/prod/project/9f1c2d3e-4b5a-6c7d-8e9f-0a1b2c3d4e5f.png")
         String projectMediaUrl,
 
-        @Schema(description = "이미지 설명 (altText, 없으면 null)", example = "메인 화면")
+        @Schema(description = "이미지 설명 (altText, 없으면 null)", nullable = true, example = "메인 화면")
         String projectMediaCaption,
 
         @Schema(description = "대표 이미지 여부", example = "true")
