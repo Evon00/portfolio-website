@@ -5,7 +5,7 @@ import type { UploadCompleteResponse } from "@/shared/_controllers/_legacy-types
 import { uploadImage } from "./upload-image";
 import type { UploadPurpose } from "./upload-rules";
 
-// 이미지 한 장씩 올리는 화면(기술 스택 아이콘 · 프로필 이미지 · 에디터 본문 이미지)의 공통 상태.
+// 이미지 한 장씩 올리는 화면(에디터 본문 이미지)의 공통 상태. 기술 스택 아이콘 · 프로필 이미지는 prepareImage 후 서버 액션으로 보낸다.
 // · uploading: 올리는 중인 장이 하나라도 있으면 true(에디터처럼 여러 장을 차례로 올려도 센다)
 // · upload(file): 성공하면 업로드 결과, 실패하면 오류 문구를 남기고 null
 // · clearError: 새로 올리기 시작할 때 이전 오류를 지운다(여러 장을 올릴 때는 묶음 시작에 한 번)

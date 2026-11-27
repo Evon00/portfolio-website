@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, type ReactNode, useRef, useState } from "react";
-import { useImageUpload } from "@/shared/libs/upload/use-image-upload";
+import { prepareImage } from "@/shared/libs/upload/upload-image";
 import { adminQueryKeys, unwrapApiResult } from "@/shared/libs/api";
 import { AdminPageHeader } from "@/shared/components/admin/page-header";
 import { AdminPanel, PanelHeader } from "@/shared/components/admin/panel";
@@ -11,9 +11,11 @@ import { Button } from "@/shared/components/button";
 import { AlertDanger, FormLabel, FormMessage, Textarea, TextField } from "@/shared/components/form";
 import { PaperAsset } from "@/shared/components/paper/paper-asset";
 import {
+  deleteProfileImageAction,
   type ProfileChanges,
   updateProfileAction,
   updateProfileSkillsAction,
+  uploadProfileImageAction,
 } from "@/shared/_controllers/profile/profile.action";
 import { type ProfileView, useProfileQuery } from "@/shared/_controllers/profile";
 import { CoreSkillEditor } from "./core-skill-editor";
@@ -80,7 +82,6 @@ function ProfileForm({ profile }: { profile: ProfileView }) {
   const { name, intro, githubUrl, email, avatarUrl, coreSkills } = form;
   const setField = <K extends keyof ProfileFormValues>(key: K, value: ProfileFormValues[K]) =>
     setForm((current) => ({ ...current, [key]: value }));
-  const avatarUpload = useImageUpload("profile");
   const [errors, setErrors] = useState<Errors>({});
 
   const save = useMutation({
@@ -104,11 +105,23 @@ function ProfileForm({ profile }: { profile: ProfileView }) {
     },
   });
 
-  async function pickAvatar(file: File) {
-    avatarUpload.clearError();
-    const uploaded = await avatarUpload.upload(file);
-    if (uploaded) setField("avatarUrl", uploaded.url);
-  }
+  // 프로필 이미지는 저장 버튼과 따로, 고르거나 지우면 바로 Spring에 반영한다(file이 null이면 삭제).
+  const avatar = useMutation({
+    mutationFn: async (file: File | null) => {
+      let url: string | null = null;
+      if (file) {
+        const form = new FormData();
+        form.append("image", await prepareImage(file, "profile"));
+        url = unwrapApiResult(await uploadProfileImageAction(form));
+      } else {
+        unwrapApiResult(await deleteProfileImageAction());
+      }
+      setField("avatarUrl", url);
+      queryClient.setQueryData<ProfileView>(adminQueryKeys.profile.all, (current) =>
+        current ? { ...current, avatarUrl: url } : current,
+      );
+    },
+  });
 
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -136,7 +149,7 @@ function ProfileForm({ profile }: { profile: ProfileView }) {
             <Button href="/" external variant="outline" size="M">
               메인에서 보기
             </Button>
-            <Button type="submit" size="M" disabled={save.isPending || avatarUpload.uploading}>
+            <Button type="submit" size="M" disabled={save.isPending || avatar.isPending}>
               저장하기
             </Button>
           </>
@@ -155,7 +168,7 @@ function ProfileForm({ profile }: { profile: ProfileView }) {
           <div className="flex items-center gap-4">
             <div className="relative size-20 shrink-0 overflow-hidden rounded-full bg-primary-light">
               {avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element -- 업로드 직후 미리보기(blob:)라 next/image를 쓰지 않는다
+                // eslint-disable-next-line @next/next/no-img-element -- 80px 원형 한 장이라 이미지 최적화(next/image · 원격 주소 설정)를 쓰지 않는다
                 <img src={avatarUrl} alt="" className="size-full object-cover" />
               ) : (
                 <PaperAsset
@@ -165,16 +178,18 @@ function ProfileForm({ profile }: { profile: ProfileView }) {
               )}
             </div>
             <div className="flex flex-col items-start gap-1.5">
-              <Button
-                variant="outline"
-                size="M"
-                onClick={() => fileRef.current?.click()}
-                disabled={avatarUpload.uploading}
-              >
-                {avatarUpload.uploading ? "올리는 중…" : "프로필 이미지 변경"}
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="M" onClick={() => fileRef.current?.click()} disabled={avatar.isPending}>
+                  {avatar.isPending ? "반영하는 중…" : "프로필 이미지 변경"}
+                </Button>
+                {avatarUrl && (
+                  <Button variant="outline" size="M" onClick={() => avatar.mutate(null)} disabled={avatar.isPending}>
+                    이미지 삭제
+                  </Button>
+                )}
+              </div>
               <FormMessage status="help">지금 메인 화면에서는 쓰이지 않아요.</FormMessage>
-              {avatarUpload.error && <FormMessage status="error">{avatarUpload.error}</FormMessage>}
+              {avatar.error && <FormMessage status="error">{avatar.error.message}</FormMessage>}
             </div>
             <input
               ref={fileRef}
@@ -184,7 +199,7 @@ function ProfileForm({ profile }: { profile: ProfileView }) {
               onChange={(event) => {
                 const file = event.target.files?.[0];
                 event.target.value = "";
-                if (file) void pickAvatar(file);
+                if (file) avatar.mutate(file);
               }}
             />
           </div>

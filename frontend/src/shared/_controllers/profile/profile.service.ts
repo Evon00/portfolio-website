@@ -12,3 +12,9 @@ export const updateProfile = profile.updateProfile;
 
 /** PUT /api/admin/profile/skill (핵심 기술 스택 전체 교체, 배열 순서 = 노출 순서) */
 export const updateProfileSkills = profile.updateProfileSkills;
+
+/** POST /api/admin/profile/image (multipart `file`, 기존 이미지 교체) */
+export const uploadProfileImage = profile.uploadProfileImage;
+
+/** DELETE /api/admin/profile/image */
+export const deleteProfileImage = profile.deleteProfileImage;
