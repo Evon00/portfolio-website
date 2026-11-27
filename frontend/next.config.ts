@@ -11,10 +11,11 @@ const nextConfig: NextConfig = {
   },
   partialPrefetching: true,
   experimental: {
-    // 이미지(최대 10MB)를 서버 액션으로 받아 Spring에 multipart로 넘기기 위한 본문 한도.
-    // 기본값은 서버 액션 1MB, proxy 본문 버퍼 10MB다. multipart 경계·헤더 몫으로 1MB를 더 둔다.
-    serverActions: { bodySizeLimit: "11mb" },
-    proxyClientMaxBodySize: "11mb",
+    // 이미지를 서버 액션으로 받아 Spring에 multipart로 넘기기 위한 본문 한도(기본값: 서버 액션 1MB, proxy 본문 버퍼 10MB).
+    // 프로젝트 저장은 갤러리 이미지(장당 10MB, 최대 10장)를 한 요청에 보내므로 Spring max-request-size(110MB)에 맞춘다.
+    // 운영 nginx의 client_max_body_size도 이 값 이상이어야 한다.
+    serverActions: { bodySizeLimit: "110mb" },
+    proxyClientMaxBodySize: "110mb",
   },
   turbopack: {
     rules: {
