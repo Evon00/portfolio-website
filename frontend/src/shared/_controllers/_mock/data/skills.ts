@@ -1,0 +1,138 @@
+import type { SkillResponse } from "@/shared/_generated";
+
+// Figma _assets › Skill Logos의 기술 22종. 아이콘은 Logo/Mono SVG를 public/mock/skills에 내보냈다.
+// 공식 단색 로고가 없는 것(OAuth2·AES·systemd·Tika·Logback·토스페이먼츠)은 Figma의 약자형 아이콘이다.
+const icon = (file: string) => `/mock/skills/${file}.svg`;
+
+export const mockSkills = {
+  java: {
+    skillId: 1,
+    name: "Java 21",
+    category: "BACKEND",
+    iconUrl: icon("java-21"),
+    createdAt: "2026-11-10T09:00:00+09:00",
+  },
+  springBoot: {
+    skillId: 2,
+    name: "Spring Boot",
+    category: "BACKEND",
+    iconUrl: icon("spring-boot"),
+    createdAt: "2026-11-10T09:00:00+09:00",
+  },
+  springSecurity: {
+    skillId: 3,
+    name: "Spring Security",
+    category: "BACKEND",
+    iconUrl: icon("spring-security"),
+    createdAt: "2026-11-10T09:00:00+09:00",
+  },
+  springModulith: {
+    skillId: 4,
+    name: "Spring Modulith",
+    category: "BACKEND",
+    iconUrl: icon("spring-modulith"),
+    createdAt: "2026-11-09T09:00:00+09:00",
+  },
+  jpa: { skillId: 5, name: "JPA", category: "BACKEND", iconUrl: icon("jpa"), createdAt: "2026-11-09T09:00:00+09:00" },
+  mariadb: {
+    skillId: 6,
+    name: "MariaDB",
+    category: "DATABASE",
+    iconUrl: icon("mariadb"),
+    createdAt: "2026-11-09T09:00:00+09:00",
+  },
+  redis: {
+    skillId: 7,
+    name: "Redis",
+    category: "DATABASE",
+    iconUrl: icon("redis"),
+    createdAt: "2026-11-08T09:00:00+09:00",
+  },
+  elasticsearch: {
+    skillId: 8,
+    name: "Elasticsearch",
+    category: "DATABASE",
+    iconUrl: icon("elasticsearch"),
+    createdAt: "2026-11-08T09:00:00+09:00",
+  },
+  jwt: { skillId: 9, name: "JWT", category: "BACKEND", iconUrl: icon("jwt"), createdAt: "2026-11-08T09:00:00+09:00" },
+  jwks: {
+    skillId: 10,
+    name: "JWKS",
+    category: "BACKEND",
+    iconUrl: icon("jwks"),
+    createdAt: "2026-11-07T09:00:00+09:00",
+  },
+  oauth2: {
+    skillId: 11,
+    name: "OAuth2",
+    category: "BACKEND",
+    iconUrl: icon("oauth2"),
+    createdAt: "2026-11-07T09:00:00+09:00",
+  },
+  aes: { skillId: 12, name: "AES", category: "BACKEND", iconUrl: icon("aes"), createdAt: "2026-11-07T09:00:00+09:00" },
+  websocket: {
+    skillId: 13,
+    name: "WebSocket",
+    category: "BACKEND",
+    iconUrl: icon("websocket"),
+    createdAt: "2026-11-06T09:00:00+09:00",
+  },
+  docker: {
+    skillId: 14,
+    name: "Docker",
+    category: "DEVOPS",
+    iconUrl: icon("docker"),
+    createdAt: "2026-11-06T09:00:00+09:00",
+  },
+  nginx: {
+    skillId: 15,
+    name: "Nginx",
+    category: "DEVOPS",
+    iconUrl: icon("nginx"),
+    createdAt: "2026-11-06T09:00:00+09:00",
+  },
+  ncloud: {
+    skillId: 16,
+    name: "NCloud",
+    category: "DEVOPS",
+    iconUrl: icon("ncloud"),
+    createdAt: "2026-11-05T09:00:00+09:00",
+  },
+  bitbucket: {
+    skillId: 17,
+    name: "Bitbucket Pipelines",
+    category: "DEVOPS",
+    iconUrl: icon("bitbucket-pipelines"),
+    createdAt: "2026-11-05T09:00:00+09:00",
+  },
+  systemd: {
+    skillId: 18,
+    name: "systemd",
+    category: "DEVOPS",
+    iconUrl: icon("systemd"),
+    createdAt: "2026-11-05T09:00:00+09:00",
+  },
+  ffmpeg: {
+    skillId: 19,
+    name: "FFmpeg",
+    category: "TOOLS",
+    iconUrl: icon("ffmpeg"),
+    createdAt: "2026-11-04T09:00:00+09:00",
+  },
+  tika: { skillId: 20, name: "Tika", category: "TOOLS", iconUrl: icon("tika"), createdAt: "2026-11-04T09:00:00+09:00" },
+  logback: {
+    skillId: 21,
+    name: "Logback",
+    category: "TOOLS",
+    iconUrl: icon("logback"),
+    createdAt: "2026-11-04T09:00:00+09:00",
+  },
+  tossPayments: {
+    skillId: 22,
+    name: "토스페이먼츠",
+    category: "TOOLS",
+    iconUrl: icon("toss-payments"),
+    createdAt: "2026-11-03T09:00:00+09:00",
+  },
+} satisfies Record<string, SkillResponse>;

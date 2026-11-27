@@ -38,3 +38,6 @@ out/
 
 ### 내부 문서 ###
 /docs/
+
+### API spec for frontend codegen (not committed) ###
+/openapi/

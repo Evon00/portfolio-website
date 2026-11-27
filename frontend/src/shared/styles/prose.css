@@ -1,0 +1,214 @@
+/*
+ * 마크다운 본문 스타일 (Figma Prose / * 컴포넌트 · 블로그·프로젝트 상세 article).
+ * 렌더러(shared/libs/markdown/render.ts)가 만든 HTML에 .prose를 붙여 쓴다. 어드민 에디터도 같은 클래스를 쓴다.
+ * 인용 색은 페이지에 따라 정해진다: .prose-blog = Sage, .prose-project = Lavender (Figma Prose / Quote).
+ */
+@layer components {
+  .prose {
+    @apply text-body-article break-words text-content-01;
+  }
+
+  .prose > :first-child {
+    margin-top: 0;
+  }
+
+  /*
+   * 제목: 마크다운 단계(# ~ #####)로 크기를 정한다. 공개 화면은 태그를 한 단계 낮춰(h2 ~ h6) 내고
+   * 에디터는 h1 ~ h5 그대로라, 태그 대신 md-h1 ~ md-h5 클래스에 스타일을 건다(렌더러·에디터가 붙인다).
+   * 제목1 Title/1 · 제목2 Title/2(위 48 · 아래 18) · 제목3 Title/3(위 28 · 아래 12) · 제목4 Label/L · 제목5 Label/M
+   */
+  .prose .md-h1 {
+    @apply mt-14 mb-5 font-display text-title-1 text-content-01;
+  }
+  .prose .md-h2 {
+    @apply mt-12 mb-[18px] font-display text-title-2 text-content-01;
+  }
+  .prose .md-h3 {
+    @apply mt-7 mb-3 font-display text-title-3 text-content-01;
+  }
+  .prose .md-h4 {
+    @apply mt-6 mb-2 text-label-l text-content-01;
+  }
+  .prose .md-h5 {
+    @apply mt-5 mb-2 text-label-m text-content-01;
+  }
+  /* 소제목 링크: 줄 안 요소라 위아래 padding은 줄 높이 · 배치를 바꾸지 않고 누르는 영역만 늘린다(h4 22 → 26, 24 이상). */
+  .prose .heading-anchor {
+    color: inherit;
+    text-decoration: none;
+    padding-block: 2px;
+  }
+
+  /* 문단: 아래 12. 위는 0이라 앞 블록(제목·코드·이미지)의 아래 여백이 그대로 간격이 된다. */
+  .prose p {
+    @apply mt-0 mb-3;
+  }
+
+  /* 문단·제목 정렬과 줄간격 (:::p{align lh}, block-style.ts). 기본(왼쪽 · 1.6 = Body/Article 27px)은 클래스가 없다. */
+  .prose .md-align-center {
+    text-align: center;
+  }
+  .prose .md-align-right {
+    text-align: right;
+  }
+  .prose .md-lh-tight {
+    line-height: 1.4;
+  }
+  .prose .md-lh-relaxed {
+    line-height: 1.9;
+  }
+  .prose .md-lh-loose {
+    line-height: 2.2;
+  }
+
+  .prose a:not(.heading-anchor) {
+    @apply text-primary-strong underline decoration-primary-muted underline-offset-4 transition-colors hover:decoration-primary-strong;
+  }
+
+  .prose strong {
+    @apply font-bold;
+  }
+
+  /* 목록: 6px 점(primary) + 12px 간격, 점은 Body/Article 27px 첫 줄 가운데 */
+  .prose ul,
+  .prose ol {
+    @apply my-4;
+  }
+  .prose ul > li {
+    @apply relative pl-[18px];
+  }
+  .prose ul > li::before {
+    @apply absolute top-[10.5px] left-0 size-1.5 rounded-full bg-primary content-[''];
+  }
+  .prose ol {
+    @apply list-decimal pl-[22px] marker:font-mono marker:text-mono-l marker:text-content-03;
+  }
+  .prose li > ul,
+  .prose li > ol {
+    @apply my-0;
+  }
+  .prose li > p {
+    @apply my-0;
+  }
+
+  /* 인라인 코드: primary-subtle 바탕, Mono/L */
+  .prose :not(pre) > code {
+    @apply rounded-md bg-primary-subtle px-1.5 py-0.5 font-mono text-mono-l text-content-01;
+  }
+
+  /* 코드 블록: content-01 바탕, 24px 여백, 긴 줄은 줄바꿈하지 않고 가로 스크롤 */
+  .prose pre {
+    @apply mt-5 mb-6 overflow-x-auto rounded-xl bg-content-01 p-6 font-mono text-mono-l whitespace-pre text-code-text;
+  }
+  /* 공개 화면 코드 글자(Mono/L). 에디터 코드 블록은 줄 번호와 같은 14/18을 쓰므로 빼 둔다(code-block-view.tsx). */
+  .prose:not(.editor-content) pre code {
+    @apply font-mono text-mono-l;
+  }
+
+  /*
+   * 코드 하이라이트 (Figma Prose / Code Block 토큰). 공개 화면(shiki)과 에디터(lowlight)가 같은 분류 규칙
+   * (shared/libs/markdown/code-tokens.ts)을 거쳐 같은 code-* 클래스를 붙인다.
+   * 색은 코드 블록(pre) 안에만 칠한다. 인라인 코드에도 code-* 클래스가 붙을 수 있는데, 밝은 배경 위에 코드 블록용 밝은 글자색이
+   * 칠해지면 글자가 안 보이므로 인라인 코드는 위의 :not(pre) > code 스타일을 그대로 쓴다.
+   */
+  .prose pre .code-text {
+    color: var(--color-code-text);
+  }
+  .prose pre .code-comment {
+    color: var(--color-code-comment);
+  }
+  .prose pre .code-keyword {
+    color: var(--color-code-keyword);
+  }
+  .prose pre .code-type {
+    color: var(--color-code-type);
+  }
+  .prose pre .code-function {
+    color: var(--color-code-function);
+  }
+  .prose pre .code-string {
+    color: var(--color-code-string);
+  }
+  .prose pre .code-number {
+    color: var(--color-code-number);
+  }
+
+  /* 이미지: 본문 폭 100%, 라운드 16, 설명은 Body/M content-03 가운데 */
+  /* rehype-pretty-code는 코드 블록을 figure로 감싸므로 이미지 figure와 구분한다 */
+  .prose figure:not([data-rehype-pretty-code-figure]) {
+    @apply my-6 flex flex-col items-center gap-2.5;
+  }
+  .prose figure[data-rehype-pretty-code-figure] {
+    @apply m-0 min-w-0;
+  }
+  .prose figure img,
+  .prose p img {
+    @apply h-auto w-full rounded-2xl bg-background-05;
+  }
+  .prose figcaption {
+    @apply text-center text-body-m text-content-03;
+  }
+  /*
+   * 이미지 정렬 (:::image{align}, Figma Prose / Image): 전체 폭은 100%, 왼쪽·가운데·오른쪽은 60% 폭으로
+   * 줄 안에서 위치만 바꾼다(글이 옆으로 감싸지 않는다). 768 미만에서는 정렬과 관계없이 전체 폭.
+   */
+  .prose figure:is(.md-image-left, .md-image-center, .md-image-right) img {
+    @apply md:w-[60%];
+  }
+  .prose figure.md-image-left {
+    @apply md:items-start;
+  }
+  .prose figure.md-image-left figcaption {
+    @apply md:text-left;
+  }
+  .prose figure.md-image-right {
+    @apply md:items-end;
+  }
+  .prose figure.md-image-right figcaption {
+    @apply md:text-right;
+  }
+
+  /* 인용·강조 블록 */
+  .prose blockquote {
+    @apply my-6 rounded-xl px-[22px] py-[18px] text-body-l;
+  }
+  .prose blockquote > p {
+    @apply my-0;
+  }
+  .prose-blog blockquote {
+    @apply bg-accent-sage-bg text-accent-sage-text;
+  }
+  .prose-project blockquote {
+    @apply bg-primary-subtle text-primary-hover;
+  }
+
+  .prose hr {
+    @apply my-10 border-0 border-t border-dashed border-line-02;
+  }
+
+  /* 표(GFM): Figma에 표 디자인이 없어 토큰으로 최소한만 정리한다 */
+  .prose table {
+    @apply my-6 block w-full overflow-x-auto text-body-m;
+    border-collapse: collapse;
+  }
+  .prose th,
+  .prose td {
+    @apply border border-line-01 px-3 py-2 text-left;
+  }
+  .prose th {
+    @apply bg-background-02 text-label-m;
+  }
+
+  .prose input[type="checkbox"] {
+    @apply mr-2 accent-primary;
+  }
+
+  /* 어드민 에디터(Tiptap)에서만: 빈 줄 안내 문구, 표 칸 선택 */
+  .editor-content p.is-empty::before {
+    @apply pointer-events-none float-left h-0 text-content-04;
+    content: attr(data-placeholder);
+  }
+  .editor-content .selectedCell {
+    @apply bg-primary-subtle;
+  }
+}

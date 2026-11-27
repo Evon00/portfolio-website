@@ -1,0 +1,111 @@
+@import "tailwindcss";
+@import "../shared/styles/theme.css";
+@import "../shared/styles/prose.css";
+
+@layer base {
+  /* Figma Motion: 헤더 연락하기 · 푸터 맨 위로는 부드럽게 스크롤 */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Figma 페이지 프레임: background-03 위에 종이 질감을 원본 크기로 타일링 */
+  body {
+    @apply bg-background-03 font-sans text-body-l text-content-01;
+    background-image: url("/images/paper-texture.webp");
+    background-repeat: repeat;
+  }
+
+  /*
+   * 한국어 줄바꿈: 단어(어절) 가운데서 끊지 않는다(제목 · 카드 · 본문 공통). 한 줄에 들어가지 않는 긴 영어 · URL만
+   * 넘치는 자리에서 끊어 가로로 넘치지 않게 한다(break-word는 최소 폭 계산을 바꾸지 않아 배치가 그대로다).
+   */
+  body {
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+
+  /* Figma Interaction States: 클릭할 수 있는 요소는 pointer, Disabled는 not-allowed */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+  button:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+
+  /*
+   * 키보드 포커스(사이트·어드민 공통): 1px primary 선 + 글로우(focus-glow). 버튼·링크·칩·점 버튼은 :focus-visible이라
+   * 마우스로 누를 때는 보이지 않고 Tab일 때만 보인다.
+   * 글 입력칸 · 에디터 본문 · 카드 제목 링크 · 메뉴 상자(tabindex=-1)는 여기서 빼고 각자 규칙을 따른다.
+   */
+  :focus-visible:not(input, textarea, select, [contenteditable], [data-card-link], [tabindex="-1"]) {
+    @apply focus-glow;
+  }
+
+  /* 코드로만 포커스를 옮기는 곳(tabindex=-1: "맨 위로" 뒤의 제목, 메뉴 상자)은 포커스 표시를 그리지 않는다. */
+  [tabindex="-1"]:focus {
+    outline: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+    }
+  }
+}
+
+/*
+ * 카드 활성 상태: 마우스 hover(마우스가 있는 기기만) 또는 제목 링크(data-card-link)에 키보드 포커스.
+ * 프로젝트 카드의 hover 모양은 모두 이 변형으로 써서 Tab 포커스 때도 hover와 똑같이 보인다(card-link.ts).
+ * card-active: 카드 자신 · group-card-active: 카드(.group) 안의 요소
+ */
+@custom-variant card-active {
+  @media (hover: hover) {
+    &:hover {
+      @slot;
+    }
+  }
+  &:has([data-card-link]:focus-visible) {
+    @slot;
+  }
+}
+@custom-variant group-card-active {
+  @media (hover: hover) {
+    :where(.group):hover & {
+      @slot;
+    }
+  }
+  :where(.group):has([data-card-link]:focus-visible) & {
+    @slot;
+  }
+}
+
+/*
+ * 포커스 모양 하나: 1px primary 선 + 글로우. box-shadow는 Tailwind 그림자 조합(--tw-ring-shadow 자리)에 넣어,
+ * 버튼 안쪽 그림자 · 패널 그림자처럼 원래 있던 그림자와 함께 보인다.
+ */
+@utility focus-glow {
+  outline: 1px solid var(--color-primary);
+  outline-offset: 0;
+  --tw-ring-shadow: var(--shadow-focus-glow);
+  box-shadow:
+    var(--tw-inset-shadow, 0 0 #0000), var(--tw-inset-ring-shadow, 0 0 #0000), var(--tw-ring-offset-shadow, 0 0 #0000),
+    var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+}
+
+/*
+ * 글 입력칸(data-focus-box, TextField · Textarea · SearchBar가 붙인다): 클릭·Tab 모두 같은 Focus 모양(Figma Form / Text Field
+ * State=Focus). 선은 칸의 1px 테두리 자리에 겹쳐 그려 글자가 움직이지 않는다. 오류 상태(aria-invalid)는 danger 테두리를 그대로 둔다.
+ * 입력칸의 outline-none 유틸리티보다 앞서도록 레이어 밖에 둔다. 에디터 본문(편집 · 마크다운 모드)은 글을 쓰는 넓은 면이라 두지 않는다.
+ */
+[data-focus-box]:focus-within:not([aria-invalid="true"], :has([aria-invalid="true"])) {
+  @apply focus-glow;
+  outline-offset: -1px;
+}

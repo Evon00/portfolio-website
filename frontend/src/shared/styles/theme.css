@@ -1,0 +1,391 @@
+/*
+ * 디자인 토큰. Figma 변수의 Code syntax(WEB)를 그대로 이름으로 쓴다.
+ * - 원색 팔레트(Figma Primitives)는 :root에만 두고 유틸리티로 노출하지 않는다.
+ * - 유틸리티는 시맨틱(Figma Semantic)만 노출한다.
+ * - 값의 단위는 px로 맞춰 Figma와 바로 대조할 수 있게 한다.
+ */
+
+:root {
+  /* paper */
+  --color-paper-50: #fffdf8;
+  --color-paper-100: #fbf7ee;
+  --color-paper-200: #f5efe2;
+  --color-paper-300: #f1ebdf;
+  --color-paper-400: #ede6d7;
+  --color-paper-500: #e9e2d3;
+  --color-paper-600: #e2d9c8;
+  --color-paper-700: #d8cfbe;
+  --color-paper-800: #c9bda6;
+  --color-paper-900: #7a7062;
+
+  /* ink */
+  --color-ink-50: #f7f6fb;
+  --color-ink-100: #dcd9e3;
+  --color-ink-200: #c2bdcc;
+  --color-ink-300: #a8a2b5;
+  --color-ink-400: #8f879e;
+  --color-ink-500: #6a6380;
+  --color-ink-600: #5a5068;
+  --color-ink-700: #4d4763;
+  --color-ink-800: #3e3856;
+  --color-ink-900: #2f2a44;
+
+  /* lavender */
+  --color-lavender-50: #efe8f7;
+  --color-lavender-100: #e6ddf3;
+  --color-lavender-200: #e3daf0;
+  --color-lavender-300: #cbbfe0;
+  --color-lavender-400: #b9aad3;
+  --color-lavender-500: #7a6aae;
+  --color-lavender-600: #5b4b8a;
+  --color-lavender-700: #4a3d7a;
+  --color-lavender-800: #3a3060;
+  --color-lavender-900: #2f2650;
+
+  /* blue */
+  --color-blue-50: #f3f7fe;
+  --color-blue-100: #dce5f5;
+  --color-blue-200: #bccbe6;
+  --color-blue-300: #a9bbdd;
+  --color-blue-400: #859ece;
+  --color-blue-500: #6181be;
+  --color-blue-600: #3f64ae;
+  --color-blue-700: #2e4b85;
+  --color-blue-800: #24406f;
+  --color-blue-900: #1b2d4c;
+
+  /* sage */
+  --color-sage-50: #f5f8f0;
+  --color-sage-100: #e1e8d6;
+  --color-sage-200: #c6d2b6;
+  --color-sage-300: #b3c29f;
+  --color-sage-400: #90a67c;
+  --color-sage-500: #6e8a5a;
+  --color-sage-600: #566d46;
+  --color-sage-700: #3f5232;
+  --color-sage-800: #34462a;
+  --color-sage-900: #263220;
+
+  /* mustard */
+  --color-mustard-50: #fffbf0;
+  --color-mustard-100: #f6e6bf;
+  --color-mustard-200: #ead9a8;
+  --color-mustard-300: #e8d29a;
+  --color-mustard-400: #dcc07a;
+  --color-mustard-500: #b2944a;
+  --color-mustard-600: #8a6a12;
+  --color-mustard-700: #5c4710;
+  --color-mustard-800: #4a390d;
+  --color-mustard-900: #392c09;
+
+  /* red */
+  --color-red-50: #fcf4f6;
+  --color-red-100: #ffeef1;
+  --color-red-200: #ffc6cf;
+  --color-red-300: #f6a8b2;
+  --color-red-400: #ec8996;
+  --color-red-500: #e16a7a;
+  --color-red-600: #d4475f;
+  --color-red-700: #c23d57;
+  --color-red-800: #8d2038;
+  --color-red-900: #5a011c;
+
+  /* violet */
+  --color-violet-50: #f8f5ff;
+  --color-violet-100: #e8defd;
+  --color-violet-200: #d7c9f4;
+  --color-violet-300: #c6b4eb;
+  --color-violet-400: #b69fe2;
+  --color-violet-500: #a68ad9;
+  --color-violet-600: #886eb5;
+  --color-violet-700: #6a5492;
+  --color-violet-800: #4f3a70;
+  --color-violet-900: #342250;
+
+  /* sky */
+  --color-sky-50: #f2f7ff;
+  --color-sky-100: #d8e6fe;
+  --color-sky-200: #c1d5f7;
+  --color-sky-300: #aac4ef;
+  --color-sky-400: #94b3e8;
+  --color-sky-500: #7ea2e0;
+  --color-sky-600: #6383ba;
+  --color-sky-700: #496595;
+  --color-sky-800: #304872;
+  --color-sky-900: #192d50;
+
+  /* orange */
+  --color-orange-50: #fff5e8;
+  --color-orange-100: #ffe8c8;
+  --color-orange-200: #fcdbac;
+  --color-orange-300: #f9cf90;
+  --color-orange-400: #f6c171;
+  --color-orange-500: #f2b44e;
+  --color-orange-600: #c48d2d;
+  --color-orange-700: #986803;
+  --color-orange-800: #6a4701;
+  --color-orange-900: #3f2900;
+
+  /* green */
+  --color-green-50: #f3f9ed;
+  --color-green-100: #e1ecd6;
+  --color-green-200: #cfdebf;
+  --color-green-300: #bdd1a9;
+  --color-green-400: #abc392;
+  --color-green-500: #9ab67c;
+  --color-green-600: #7a935f;
+  --color-green-700: #5c7144;
+  --color-green-800: #3f5129;
+  --color-green-900: #243310;
+
+  /* peach */
+  --color-peach-50: #fff5eb;
+  --color-peach-100: #fbead9;
+  --color-peach-200: #f8dfc6;
+  --color-peach-300: #f4d5b4;
+  --color-peach-400: #f1caa1;
+  --color-peach-500: #edbf8e;
+  --color-peach-600: #bf966a;
+  --color-peach-700: #926f48;
+  --color-peach-800: #684a27;
+  --color-peach-900: #412808;
+
+  --color-white: #ffffff;
+}
+
+/*
+ * static: 쓰이지 않은 테마 변수도 항상 :root에 출력한다. CSS에서 var(--color-*) 등을 그대로 써도 된다.
+ * inline: 유틸리티가 원색 변수를 직접 참조한다.
+ */
+@theme static inline {
+  /* Tailwind 기본 팔레트·폰트·글자 크기·굵기·라운드·그림자·브레이크포인트를 끄고 Figma 토큰만 쓴다. */
+  --color-*: initial;
+  --font-*: initial;
+  --text-*: initial;
+  --font-weight-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --drop-shadow-*: initial;
+  --breakpoint-*: initial;
+
+  /* ---------- 색 (Figma Semantic) ---------- */
+  --color-primary: var(--color-lavender-600);
+  --color-primary-hover: var(--color-lavender-800);
+  --color-primary-strong: var(--color-lavender-700);
+  --color-primary-light: var(--color-lavender-100);
+  --color-primary-muted: var(--color-lavender-300);
+  --color-primary-subtle: var(--color-lavender-50);
+
+  --color-secondary: var(--color-ink-800);
+  --color-secondary-light: var(--color-ink-400);
+
+  --color-background-01: var(--color-paper-50);
+  --color-background-02: var(--color-paper-100);
+  --color-background-03: var(--color-paper-200);
+  --color-background-04: var(--color-paper-400);
+  --color-background-05: var(--color-paper-500);
+
+  --color-content-01: var(--color-ink-900);
+  --color-content-02: var(--color-ink-700);
+  --color-content-03: var(--color-ink-500);
+  --color-content-04: var(--color-ink-400);
+  --color-content-inverse: var(--color-white);
+
+  --color-line-01: var(--color-paper-600);
+  --color-line-02: var(--color-paper-700);
+  --color-line-03: var(--color-paper-800);
+
+  --color-success: var(--color-sage-700);
+  --color-success-light: var(--color-sage-100);
+  --color-danger: var(--color-red-600);
+  --color-danger-strong: var(--color-red-700);
+  --color-danger-light: var(--color-red-100);
+  --color-danger-muted: var(--color-red-200);
+  --color-warning: var(--color-mustard-600);
+  --color-info: var(--color-blue-700);
+
+  --color-accent-blue-bg: var(--color-blue-100);
+  --color-accent-blue-muted: var(--color-blue-200);
+  --color-accent-blue-text: var(--color-blue-800);
+  --color-accent-blue-strong: var(--color-blue-600);
+  --color-accent-sage-bg: var(--color-sage-100);
+  --color-accent-sage-muted: var(--color-sage-200);
+  --color-accent-sage-text: var(--color-sage-800);
+  --color-accent-mustard-bg: var(--color-mustard-100);
+  --color-accent-mustard-muted: var(--color-mustard-300);
+  --color-accent-mustard-text: var(--color-mustard-700);
+
+  --color-chart-1: var(--color-violet-500);
+  --color-chart-2: var(--color-sky-500);
+  --color-chart-3: var(--color-orange-500);
+  --color-chart-4: var(--color-green-500);
+  --color-chart-5: var(--color-peach-500);
+  --color-chart-other: var(--color-paper-700);
+  --color-chart-bar: var(--color-primary);
+
+  --color-code-text: var(--color-paper-300);
+  --color-code-keyword: var(--color-red-200);
+  --color-code-type: var(--color-mustard-400);
+  --color-code-function: var(--color-blue-300);
+  --color-code-string: var(--color-sage-300);
+  --color-code-number: var(--color-lavender-400);
+  --color-code-comment: var(--color-ink-400);
+
+  /* ---------- 폰트 (next/font가 만든 변수를 참조) ---------- */
+  --font-display: var(--font-jua), sans-serif;
+  --font-sans: var(--font-ibm-plex-sans-kr), sans-serif;
+  --font-mono: var(--font-ibm-plex-mono), monospace;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+
+  /* ---------- 타이포 (Figma 텍스트 스타일 16개) ---------- */
+  --text-display-l: 76px;
+  --text-display-l--line-height: 84px;
+  --text-display-l--letter-spacing: -0.5px;
+  --text-display-m: 56px;
+  --text-display-m--line-height: 62px;
+  --text-display-m--letter-spacing: -0.5px;
+  --text-display-s: 44px;
+  --text-display-s--line-height: 48px;
+  --text-display-s--letter-spacing: -0.5px;
+  /* 화면 폭에 따라 이어지는 Display (메인 히어로 이름 · 프로젝트 상세 제목만)
+   * 375px에서 Figma 모바일 값, 1440px에서 데스크톱 값, 사이는 선형. rem을 섞어 브라우저 글꼴 크기·확대에도 커진다. */
+  --text-display-fluid-m-l: clamp(3.5rem, 3.0599rem + 1.8779vw, 4.75rem);
+  --text-display-fluid-m-l--line-height: clamp(3.875rem, 3.3908rem + 2.0657vw, 5.25rem);
+  --text-display-fluid-m-l--letter-spacing: -0.5px;
+  --text-display-fluid-s-m: clamp(2.75rem, 2.4859rem + 1.1268vw, 3.5rem);
+  --text-display-fluid-s-m--line-height: clamp(3rem, 2.6919rem + 1.3146vw, 3.875rem);
+  --text-display-fluid-s-m--letter-spacing: -0.5px;
+  --text-display-error: 112px;
+  --text-display-error--line-height: 112px;
+  --text-display-error--letter-spacing: 4px;
+
+  --text-title-1: 40px;
+  --text-title-1--line-height: 48px;
+  --text-title-2: 30px;
+  --text-title-2--line-height: 39px;
+  --text-title-3: 22px;
+  --text-title-3--line-height: 30px;
+
+  --text-body-article: 17px;
+  --text-body-article--line-height: 27px;
+  --text-body-l: 16px;
+  --text-body-l--line-height: 27px;
+  --text-body-m: 14px;
+  --text-body-m--line-height: 21px;
+  --text-caption: 13px;
+  --text-caption--line-height: 20px;
+
+  --text-label-l: 15px;
+  --text-label-l--line-height: 23px;
+  --text-label-l--font-weight: 700;
+  --text-label-m: 14px;
+  --text-label-m--line-height: 21px;
+  --text-label-m--font-weight: 700;
+
+  --text-eyebrow: 13px;
+  --text-eyebrow--line-height: 17px;
+  --text-eyebrow--letter-spacing: 1.5px;
+  --text-eyebrow--font-weight: 500;
+  --text-mono-l: 13px;
+  --text-mono-l--line-height: 17px;
+  --text-mono-m: 12px;
+  --text-mono-m--line-height: 16px;
+
+  /* ---------- 라운드 ---------- */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 24px;
+  --radius-control: 10px;
+  --radius-card: 18px;
+  --radius-pill: 20px;
+
+  /* ---------- 그림자 (Figma Effect style, 이름은 설계 문서 11절) ---------- */
+  --shadow-button-inset: inset 0 -3px 0 0 rgb(0 0 0 / 0.18);
+  --shadow-paper-lift: 0 2px 0 0 var(--color-paper-600);
+  --shadow-panel: 0 6px 0 0 #e8e0cf;
+  /* 포커스 글로우(Figma 포커스 스타일 · 글로우 (확정)): primary 45%, blur 8, spread 3. 1px primary 선과 함께 쓴다(globals.css의 focus-glow) */
+  --shadow-focus-glow: 0 0 8px 3px color-mix(in srgb, var(--color-primary) 45%, transparent);
+  --shadow-drawer: -8px 0 24px 0 rgb(46 41 69 / 0.18);
+  --shadow-modal: 0 6px 0 0 rgb(46 41 69 / 0.15);
+  /* 종이 이미지처럼 모양이 있는 것에 거는 Paper lift (box-shadow 대신 이미지 가장자리를 따라간다) */
+  --drop-shadow-paper-lift: 0 2px 0 var(--color-paper-600);
+
+  /* ---------- 간격·브레이크포인트 ---------- */
+  /* p-4 = 16px. 고정 간격은 4의 배수 유틸리티, 화면 폭에 따라 바뀌는 간격은 아래 fluid 토큰. */
+  --spacing: 4px;
+  /* 화면 폭에 따라 이어지는 간격·크기 (gap · padding · margin · 위치 · 장식 크기)
+   * fluid-<최소>-<최대>: 375(Figma 모바일)에서 최소, 1440(Figma 데스크톱)에서 최대, 그 사이는 선형으로 이어진다.
+   * 브레이크포인트에서 값이 뚝 바뀌지 않게 한다(gap-fluid-40-56, pt-fluid-24-40 등). 새 값이 필요하면 같은 식으로 추가한다.
+   * 1065 = 1440 - 375 */
+  --spacing-fluid-8-12: clamp(8px, calc(8px + 4 * (100vw - 375px) / 1065), 12px);
+  --spacing-fluid-10-14: clamp(10px, calc(10px + 4 * (100vw - 375px) / 1065), 14px);
+  --spacing-fluid-12-16: clamp(12px, calc(12px + 4 * (100vw - 375px) / 1065), 16px);
+  --spacing-fluid-12-24: clamp(12px, calc(12px + 12 * (100vw - 375px) / 1065), 24px);
+  --spacing-fluid-16-17: clamp(16px, calc(16px + 1 * (100vw - 375px) / 1065), 17px);
+  --spacing-fluid-16-19: clamp(16px, calc(16px + 3 * (100vw - 375px) / 1065), 19px);
+  --spacing-fluid-16-20: clamp(16px, calc(16px + 4 * (100vw - 375px) / 1065), 20px);
+  --spacing-fluid-16-28: clamp(16px, calc(16px + 12 * (100vw - 375px) / 1065), 28px);
+  --spacing-fluid-16-40: clamp(16px, calc(16px + 24 * (100vw - 375px) / 1065), 40px);
+  --spacing-fluid-16-48: clamp(16px, calc(16px + 32 * (100vw - 375px) / 1065), 48px);
+  --spacing-fluid-18-28: clamp(18px, calc(18px + 10 * (100vw - 375px) / 1065), 28px);
+  --spacing-fluid-20-40: clamp(20px, calc(20px + 20 * (100vw - 375px) / 1065), 40px);
+  --spacing-fluid-24-32: clamp(24px, calc(24px + 8 * (100vw - 375px) / 1065), 32px);
+  --spacing-fluid-24-40: clamp(24px, calc(24px + 16 * (100vw - 375px) / 1065), 40px);
+  --spacing-fluid-28-32: clamp(28px, calc(28px + 4 * (100vw - 375px) / 1065), 32px);
+  --spacing-fluid-28-40: clamp(28px, calc(28px + 12 * (100vw - 375px) / 1065), 40px);
+  --spacing-fluid-40-56: clamp(40px, calc(40px + 16 * (100vw - 375px) / 1065), 56px);
+  --spacing-fluid-40-64: clamp(40px, calc(40px + 24 * (100vw - 375px) / 1065), 64px);
+  --spacing-fluid-40-88: clamp(40px, calc(40px + 48 * (100vw - 375px) / 1065), 88px);
+  --spacing-fluid-40-104: clamp(40px, calc(40px + 64 * (100vw - 375px) / 1065), 104px);
+  --spacing-fluid-56-80: clamp(56px, calc(56px + 24 * (100vw - 375px) / 1065), 80px);
+  --spacing-fluid-72-132: clamp(72px, calc(72px + 60 * (100vw - 375px) / 1065), 132px);
+  --spacing-fluid-80-104: clamp(80px, calc(80px + 24 * (100vw - 375px) / 1065), 104px);
+  --spacing-fluid-84-96: clamp(84px, calc(84px + 12 * (100vw - 375px) / 1065), 96px);
+  --spacing-fluid-96-120: clamp(96px, calc(96px + 24 * (100vw - 375px) / 1065), 120px);
+  --spacing-fluid-96-140: clamp(96px, calc(96px + 44 * (100vw - 375px) / 1065), 140px);
+  --spacing-fluid-112-160: clamp(112px, calc(112px + 48 * (100vw - 375px) / 1065), 160px);
+  --spacing-fluid-118-170: clamp(118px, calc(118px + 52 * (100vw - 375px) / 1065), 170px);
+  --spacing-fluid-120-170: clamp(120px, calc(120px + 50 * (100vw - 375px) / 1065), 170px);
+  --spacing-fluid-128-160: clamp(128px, calc(128px + 32 * (100vw - 375px) / 1065), 160px);
+  --spacing-fluid-128-200: clamp(128px, calc(128px + 72 * (100vw - 375px) / 1065), 200px);
+  --spacing-fluid-132-166: clamp(132px, calc(132px + 34 * (100vw - 375px) / 1065), 166px);
+  --spacing-fluid-140-210: clamp(140px, calc(140px + 70 * (100vw - 375px) / 1065), 210px);
+  --spacing-fluid-144-183: clamp(144px, calc(144px + 39 * (100vw - 375px) / 1065), 183px);
+  --spacing-fluid-240-440: clamp(240px, calc(240px + 200 * (100vw - 375px) / 1065), 440px);
+  /* 어드민(1920 기준 디자인) 표 열: 1440px에서 최소 → 1920px에서 최대(Figma 값), 그 사이는 clamp로 이어짐 */
+  --spacing-wide-64-88: clamp(64px, calc(64px + 24 * (100vw - 1440px) / 480), 88px);
+  --spacing-wide-180-260: clamp(180px, calc(180px + 80 * (100vw - 1440px) / 480), 260px);
+  --spacing-wide-240-400: clamp(240px, calc(240px + 160 * (100vw - 1440px) / 480), 400px);
+  /* 375는 기본(모바일 우선), 그 위 구간만 둔다. */
+  --breakpoint-sm: 480px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1440px;
+  --breakpoint-3xl: 1920px;
+
+  /* ---------- 모션 (Figma Icons / Effects › Motion 문서) ---------- */
+  /* Figma 문서는 CSS 키워드 곡선(ease-out 등)을 쓴다. Tailwind 기본 곡선 대신 키워드로 바꾼다. */
+  --ease-*: initial;
+  --ease-in: ease-in;
+  --ease-out: ease-out;
+  --ease-in-out: ease-in-out;
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* transition-* 기본값 = Hover·Press·Toggle (150ms ease-out) */
+  --default-transition-duration: 150ms;
+  --default-transition-timing-function: ease-out;
+
+  --duration-hover: 150ms; /* Hover · Press · Toggle */
+  --duration-fade: 200ms; /* Gallery 전환 · Modal */
+  --duration-drawer-open: 320ms; /* 모바일 드로어 열기 (ease-drawer) */
+  --duration-drawer-close: 240ms; /* 모바일 드로어 닫기 (ease-in) */
+  --duration-carousel: 350ms; /* 주요 프로젝트 캐러셀 (ease-in-out) */
+}
