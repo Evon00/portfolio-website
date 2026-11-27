@@ -46,7 +46,7 @@ public class AdminSkillController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<CommonApiResponse<CreateSkillResponseDto>> createSkill(
             @Valid @RequestPart CreateSkillRequestDto data,
-            @RequestPart MultipartFile file) {
+            @RequestPart(required = false) MultipartFile file) {
         return ResponseEntity.ok(CommonApiResponse.ok(adminSkillService.createSkill(data, file)));
     }
 

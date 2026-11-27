@@ -60,10 +60,11 @@ public class AdminSkillServiceImpl implements AdminSkillService {
             throw new CustomException(ExceptionCode.SKILL_NAME_DUPLICATED);
         }
 
-        // 3. 아이콘 업로드 (StorageFolder.SKILL)
-        //      exc. 파일 미존재, 용량 초과, 허용하지 않는 형식이면 에러 처리 (FileUtil에서 검증)
+        // 3. 아이콘 업로드 (선택, StorageFolder.SKILL)
+        //      -> 파일이 없거나 빈 파일이면 업로드하지 않고 아이콘 없이 저장 (원본명, s3 key, 크기, 확장자 null)
+        //      exc. 용량 초과, 허용하지 않는 형식이면 에러 처리 (FileUtil에서 검증)
         //      -> 이후 DB 저장 실패로 롤백되면 업로드한 파일은 S3에서 삭제
-        UploadedFile icon = fileUtil.upload(file, StorageFolder.SKILL);
+        UploadedFile icon = file != null && !file.isEmpty() ? fileUtil.upload(file, StorageFolder.SKILL) : null;
 
         // 4. 기술 스택 저장
         //      -> 동시 요청으로 같은 이름이 저장되면 DB 고유 인덱스에서 에러 처리 (DATA_INTEGRITY_VIOLATION)
@@ -71,10 +72,10 @@ public class AdminSkillServiceImpl implements AdminSkillService {
         Skill skill = skillRepository.save(Skill.builder()
                 .name(name)
                 .category(category)
-                .originalName(icon.originalName())
-                .s3Key(icon.s3Key())
-                .size(icon.size())
-                .ext(icon.ext())
+                .originalName(icon != null ? icon.originalName() : null)
+                .s3Key(icon != null ? icon.s3Key() : null)
+                .size(icon != null ? icon.size() : null)
+                .ext(icon != null ? icon.ext() : null)
                 .build());
         log.info("기술 스택 추가 - skillId = {}", skill.getId());
 

@@ -26,7 +26,7 @@ import java.lang.annotation.Target;
                 |:-------|:-----|:----:|:-----|
                 | `skillName` | `String` | ✅ | 기술 스택 이름 (최대 100자, 대소문자 무시 중복 불가) |
                 | `skillCategory` | `String` | ✅ | 기술 스택 카테고리 (최대 100자, 예: Backend) |
-                | `file` | `MultipartFile` | ✅ | 아이콘 (JPG, PNG, GIF, WEBP, SVG / 10MB 이하, 1:1 권장) |
+                | `file` | `MultipartFile` | ❌ | 아이콘 (JPG, PNG, GIF, WEBP, SVG / 10MB 이하, 1:1 권장, 없으면 아이콘 없이 저장) |
 
                 이름, 카테고리의 앞뒤 공백은 제거하고 저장합니다.
 
@@ -38,7 +38,7 @@ import java.lang.annotation.Target;
                 | `skillId` | `Long` | 기술 스택 PK |
                 | `skillName` | `String` | 기술 스택 이름 |
                 | `skillCategory` | `String` | 기술 스택 카테고리 |
-                | `skillUrl` | `String` | 기술 스택 아이콘 URL |
+                | `skillUrl` | `String` | 기술 스택 아이콘 URL (없으면 null) |
                 | `createdAt` | `OffsetDateTime` | 생성일 |
                 """,
         security = @SecurityRequirement(name = "Authorization")
@@ -46,7 +46,6 @@ import java.lang.annotation.Target;
 @ApiExceptionDocs({
         ExceptionCode.VALID_ERROR,
         ExceptionCode.INVALID_REQUEST_PARAM,
-        ExceptionCode.FILE_REQUIRED,
         ExceptionCode.FILE_TYPE_INVALID,
         ExceptionCode.FILE_SIZE_EXCEED,
         ExceptionCode.SKILL_NAME_DUPLICATED,
