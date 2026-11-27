@@ -27,10 +27,13 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.HandlerMethod;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 @Configuration
@@ -107,8 +110,57 @@ public class SwaggerConfig {
             Schema<?> schema = openApi.getComponents().getSchemas().get("CommonApiResponseVoid");
             if (schema != null) {
                 schema.getProperties().remove("data");
+                if (schema.getRequired() != null) {
+                    schema.getRequired().remove("data");
+                }
             }
         };
+    }
+
+    /*
+    응답 스키마의 모든 필드를 필수(required)로 표시
+    - 응답 DTO는 값이 없어도 필드를 항상 내려주므로(null 포함) 필수로 표시해 프론트 생성 타입에서 선택(?)이 되지 않게 함
+    - null이 올 수 있는 필드는 DTO의 @Schema에서 따로 표시
+    - 이름 규칙이 아니라 실제 2xx 응답에서 따라가며 찾으므로 요청 전용 스키마는 바뀌지 않음
+     */
+    @Bean
+    public GlobalOpenApiCustomizer responseRequiredCustomizer() {
+        return openApi -> {
+            Map<String, Schema> schemas = openApi.getComponents().getSchemas();
+            if (schemas == null || openApi.getPaths() == null) return;
+
+            Set<String> responseSchemaNames = new HashSet<>();
+            openApi.getPaths().values().stream()
+                    .flatMap(pathItem -> pathItem.readOperations().stream())
+                    .filter(operation -> operation.getResponses() != null)
+                    .flatMap(operation -> operation.getResponses().entrySet().stream())
+                    .filter(response -> response.getKey().startsWith("2") && response.getValue().getContent() != null)
+                    .flatMap(response -> response.getValue().getContent().values().stream())
+                    .forEach(mediaType -> collectSchemaNames(mediaType.getSchema(), schemas, responseSchemaNames));
+
+            responseSchemaNames.forEach(name -> {
+                Schema<?> schema = schemas.get(name);
+                if (schema != null && schema.getProperties() != null) {
+                    schema.setRequired(new ArrayList<>(schema.getProperties().keySet()));
+                }
+            });
+        };
+    }
+
+    // $ref, 배열 항목, 하위 필드를 따라가며 참조된 스키마 이름을 모은다 (이미 본 스키마는 건너뜀)
+    private void collectSchemaNames(Schema<?> schema, Map<String, Schema> schemas, Set<String> names) {
+        if (schema == null) return;
+        if (schema.get$ref() != null) {
+            String name = schema.get$ref().substring(schema.get$ref().lastIndexOf('/') + 1);
+            if (names.add(name)) {
+                collectSchemaNames(schemas.get(name), schemas, names);
+            }
+            return;
+        }
+        collectSchemaNames(schema.getItems(), schemas, names);
+        if (schema.getProperties() != null) {
+            schema.getProperties().values().forEach(property -> collectSchemaNames(property, schemas, names));
+        }
     }
 
     private boolean isJwtNotRequired(HandlerMethod handlerMethod) {
