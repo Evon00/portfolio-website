@@ -1,0 +1,38 @@
+package com.jh.backend.service;
+
+import com.jh.backend.dto.post.request.CheckPostSlugRequestDto;
+import com.jh.backend.common.PageResponseDto;
+import com.jh.backend.dto.post.item.FindAllAdminPostsItem;
+import com.jh.backend.dto.post.request.CreatePostRequestDto;
+import com.jh.backend.dto.post.request.FindAllAdminPostsRequestDto;
+import com.jh.backend.dto.post.response.CheckPostSlugResponseDto;
+import com.jh.backend.dto.post.response.CreatePostResponseDto;
+import com.jh.backend.dto.post.request.UpdatePostRequestDto;
+import com.jh.backend.dto.post.response.FindPostResponseDto;
+import com.jh.backend.dto.post.response.UpdatePostResponseDto;
+import com.jh.backend.dto.post.response.UploadPostImageResponseDto;
+import org.springframework.web.multipart.MultipartFile;
+
+public interface AdminPostService {
+
+    // 게시글 이미지 업로드
+    UploadPostImageResponseDto uploadPostImage(MultipartFile file);
+
+    // 게시글 슬러그 중복 확인
+    CheckPostSlugResponseDto checkPostSlug(CheckPostSlugRequestDto dto);
+
+    // 게시글 추가
+    CreatePostResponseDto createPost(CreatePostRequestDto dto);
+
+    // 관리자 게시글 목록 조회
+    PageResponseDto<FindAllAdminPostsItem> findAllAdminPosts(FindAllAdminPostsRequestDto dto);
+
+    // 게시글 상세 조회 (수정용)
+    FindPostResponseDto findPost(Long postId);
+
+    // 게시글 수정
+    UpdatePostResponseDto updatePost(Long postId, UpdatePostRequestDto dto);
+
+    // 게시글 삭제
+    void deletePost(Long postId);
+}

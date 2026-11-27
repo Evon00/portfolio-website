@@ -4,6 +4,7 @@ import com.jh.backend.common.CommonApiResponse;
 import com.jh.backend.common.annotation.AuthExceptionSwaggerDocs;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tomcat.util.http.InvalidParameterException;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
@@ -142,11 +143,12 @@ public class GlobalExceptionHandler {
     }
 
     //  400  //
-    //  파라미터, 쿠키, 헤더, @RequestPart 누락 및 타입 불일치 오류  //
+    //  파라미터, 쿠키, 헤더, @RequestPart 누락 및 타입 불일치, 파라미터 디코딩(잘못된 인코딩) 오류  //
     @ExceptionHandler({
             ServletRequestBindingException.class,
             MissingServletRequestPartException.class,
-            MethodArgumentTypeMismatchException.class
+            MethodArgumentTypeMismatchException.class,
+            InvalidParameterException.class
     })
     public ResponseEntity<CommonApiResponse<Object>> handleInvalidRequestParam(Exception ex, HttpServletRequest request) {
         return handle(ExceptionCode.INVALID_REQUEST_PARAM, ex, request);

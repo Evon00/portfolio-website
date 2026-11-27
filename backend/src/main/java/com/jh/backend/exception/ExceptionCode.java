@@ -66,19 +66,27 @@ public enum ExceptionCode {
 
     //ADMIN
     ADMIN_LOGIN_FAILED("ADMIN_001", HttpStatus.BAD_REQUEST, "아이디 또는 비밀번호가 일치하지 않습니다."),
+    ADMIN_NOT_FOUND("ADMIN_002", HttpStatus.NOT_FOUND, "관리자 정보를 찾을 수 없습니다."),
 
     //POST
     POST_NOT_FOUND("POST_001", HttpStatus.NOT_FOUND, "게시글을 찾을 수 없습니다."),
     POST_SLUG_DUPLICATED("POST_002", HttpStatus.CONFLICT, "이미 사용 중인 게시글 슬러그입니다."),
+    POST_MEDIA_DUPLICATED("POST_003", HttpStatus.BAD_REQUEST, "중복된 게시글 이미지가 포함되어 있습니다."),
+    POST_MEDIA_INVALID("POST_004", HttpStatus.BAD_REQUEST, "사용할 수 없는 게시글 이미지가 포함되어 있습니다."),
 
     //PROJECT
     PROJECT_NOT_FOUND("PROJECT_001", HttpStatus.NOT_FOUND, "프로젝트를 찾을 수 없습니다."),
     PROJECT_SLUG_DUPLICATED("PROJECT_002", HttpStatus.CONFLICT, "이미 사용 중인 프로젝트 슬러그입니다."),
+    PROJECT_MEDIA_INVALID("PROJECT_003", HttpStatus.BAD_REQUEST, "이미지 정보와 파일이 일치하지 않습니다."),
+    PROJECT_MEDIA_IMPORTANT_DUPLICATED("PROJECT_004", HttpStatus.BAD_REQUEST, "대표 이미지는 1개만 지정할 수 있습니다."),
+    PROJECT_PRIORITY_OUT_OF_RANGE("PROJECT_005", HttpStatus.BAD_REQUEST, "프로젝트 순서가 전체 프로젝트 수를 초과합니다."),
 
     //SKILL
     SKILL_IN_USE("SKILL_001", HttpStatus.CONFLICT, "사용 중인 기술 스택은 삭제할 수 없습니다."),
     SKILL_NOT_FOUND("SKILL_002", HttpStatus.NOT_FOUND, "기술 스택을 찾을 수 없습니다."),
     SKILL_NAME_DUPLICATED("SKILL_003", HttpStatus.CONFLICT, "이미 등록된 기술 스택 이름입니다."),
+    SKILL_ID_DUPLICATED("SKILL_004", HttpStatus.BAD_REQUEST, "중복된 기술 스택이 포함되어 있습니다."),
+    SKILL_ID_INVALID("SKILL_005", HttpStatus.BAD_REQUEST, "존재하지 않는 기술 스택이 포함되어 있습니다."),
 
     //  service  //
     ;
