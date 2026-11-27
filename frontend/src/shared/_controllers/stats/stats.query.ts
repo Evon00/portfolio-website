@@ -2,11 +2,12 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { adminFetch, adminQueryKeys } from "@/shared/libs/api";
-import type { DashboardResponse } from "@/shared/_controllers/_legacy-types";
+import type { DashboardView } from "./stats.types";
 
+/** 대시보드 한 장. Route Handler가 Spring 통계 API 4개를 함께 불러 합친다. */
 export function useDashboardQuery() {
   return useQuery({
     queryKey: adminQueryKeys.dashboard.all,
-    queryFn: () => adminFetch<DashboardResponse>("/api/admin/dashboard"),
+    queryFn: () => adminFetch<DashboardView>("/api/admin/dashboard"),
   });
 }

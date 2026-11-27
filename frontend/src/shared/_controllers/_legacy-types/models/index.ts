@@ -1,9 +1,0 @@
-export type * from "./dashboard-popular-post";
-export type * from "./dashboard-response";
-export type * from "./dashboard-skill-share";
-export type * from "./error-response";
-export type * from "./post-detail-response";
-export type * from "./project-detail-response";
-export type * from "./project-image-response";
-export type * from "./project-summary-response";
-export type * from "./skill-response";

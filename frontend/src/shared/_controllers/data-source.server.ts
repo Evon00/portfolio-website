@@ -19,6 +19,4 @@ export * as skill from "./skill/skill.api";
 
 export * as profile from "./profile/profile.api";
 
-import * as dashboardMock from "./_mock/dashboard";
-import type * as DashboardApi from "./dashboard/dashboard.api";
-export const dashboard = dashboardMock satisfies typeof DashboardApi;
+export * as stats from "./stats/stats.api";

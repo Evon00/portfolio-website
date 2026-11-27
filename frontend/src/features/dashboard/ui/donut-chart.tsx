@@ -1,6 +1,7 @@
-import type { DashboardSkillShare } from "@/shared/_controllers/_legacy-types";
+import type { SkillStatsView } from "@/shared/_controllers/stats";
 
-// Figma Components › Admin / Donut Chart. 상위 5개 + 기타, 가운데 합계.
+// Figma Components › Admin / Donut Chart. 상위 N개 + 기타, 가운데 합계.
+// 상위 N개와 기타 묶음, 퍼센트(합계 100)는 서버가 계산해 준다.
 const COLORS = [
   "var(--color-chart-1)",
   "var(--color-chart-2)",
@@ -14,13 +15,11 @@ const STROKE = 34;
 const RADIUS = (SIZE - STROKE) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
-type DonutChartProps = { shares: DashboardSkillShare[]; unit: string };
+type DonutChartProps = { stats: SkillStatsView; unit: string };
 
-export function DonutChart({ shares, unit }: DonutChartProps) {
-  const total = shares.reduce((sum, share) => sum + share.count, 0);
-  const top = shares.slice(0, 5).map((share, i) => ({ ...share, color: COLORS[i] }));
-  const rest = total - top.reduce((sum, share) => sum + share.count, 0);
-  const segments = rest > 0 ? [...top, { name: "기타", count: rest, color: OTHER }] : top;
+export function DonutChart({ stats, unit }: DonutChartProps) {
+  const { total, shares } = stats;
+  const segments = shares.map((share, i) => ({ ...share, color: share.etc ? OTHER : COLORS[i % COLORS.length] }));
 
   let offset = 0;
   return (
@@ -60,7 +59,7 @@ export function DonutChart({ shares, unit }: DonutChartProps) {
           <li key={segment.name} className="flex items-center gap-2.5 font-mono text-mono-l">
             <span className="size-3 shrink-0 rounded-sm" style={{ background: segment.color }} aria-hidden />
             <span className="min-w-0 flex-1 truncate text-content-01">{segment.name}</span>
-            <span className="text-content-02 tabular-nums">{Math.round((segment.count / total) * 100)}%</span>
+            <span className="text-content-02 tabular-nums">{segment.ratio}%</span>
           </li>
         ))}
       </ul>
