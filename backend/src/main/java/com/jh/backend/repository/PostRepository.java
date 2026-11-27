@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
@@ -26,6 +27,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     // 전체 조회수 합계 (삭제된 게시글 제외, @SQLRestriction, 게시글이 없으면 0)
     @Query("SELECT COALESCE(SUM(p.view), 0) FROM Post p")
     long sumView();
+
+    // 게시글 목록 (삭제된 게시글 제외, 정렬·개수는 Pageable, count 쿼리 없음)
+    List<Post> findAllBy(Pageable pageable);
 
     // 게시글 목록 검색 (삭제된 게시글 제외, 정렬은 Pageable)
     //      -> keywordType이 null이면 검색 안 함
