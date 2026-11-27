@@ -9,3 +9,6 @@ export const findProfile = profile.findProfile;
 
 /** PATCH /api/admin/profile (보낸 필드만 수정) */
 export const updateProfile = profile.updateProfile;
+
+/** PUT /api/admin/profile/skill (핵심 기술 스택 전체 교체, 배열 순서 = 노출 순서) */
+export const updateProfileSkills = profile.updateProfileSkills;

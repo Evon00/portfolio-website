@@ -3,8 +3,8 @@
 import type { UpdateProfileRequestDto } from "@/shared/_generated";
 import { invalidateProfile } from "@/shared/libs/api/invalidate";
 import { withAdminAction } from "@/shared/libs/auth/guard";
-import { updateProfile } from "./profile.service";
-import type { ProfileView } from "./profile.types";
+import { updateProfile, updateProfileSkills } from "./profile.service";
+import { type ProfileView, toCoreSkillView } from "./profile.types";
 
 /**
  * 바뀐 필드만 담는다(Spring PATCH: 보내지 않은 필드는 기존 값 유지).
@@ -32,5 +32,14 @@ export async function updateProfileAction(changes: ProfileChanges) {
       email: saved.adminEmail,
       avatarUrl: saved.adminProfileUrl,
     } satisfies Omit<ProfileView, "coreSkills">;
+  });
+}
+
+/** 핵심 기술 스택은 전체 교체다(Spring PUT). 고른 순서가 메인 노출 순서가 된다. */
+export async function updateProfileSkillsAction(skillIds: number[]) {
+  return withAdminAction(async () => {
+    const saved = await updateProfileSkills({ skillIds });
+    invalidateProfile();
+    return saved.skills.map(toCoreSkillView);
   });
 }

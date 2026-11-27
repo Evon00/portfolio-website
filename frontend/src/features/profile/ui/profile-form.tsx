@@ -10,7 +10,11 @@ import { AdminLoadError, AdminLoading } from "@/shared/components/admin/state";
 import { Button } from "@/shared/components/button";
 import { AlertDanger, FormLabel, FormMessage, Textarea, TextField } from "@/shared/components/form";
 import { PaperAsset } from "@/shared/components/paper/paper-asset";
-import { type ProfileChanges, updateProfileAction } from "@/shared/_controllers/profile/profile.action";
+import {
+  type ProfileChanges,
+  updateProfileAction,
+  updateProfileSkillsAction,
+} from "@/shared/_controllers/profile/profile.action";
 import { type ProfileView, useProfileQuery } from "@/shared/_controllers/profile";
 import { CoreSkillEditor } from "./core-skill-editor";
 
@@ -43,6 +47,7 @@ type ProfileFormValues = Omit<ProfileView, "githubUrl" | "email"> & { githubUrl:
 
 // Spring 검증과 같은 한도
 const MAX_LENGTH = { name: 10, intro: 200, githubUrl: 300, email: 300 } as const;
+const MAX_CORE_SKILLS = 20;
 
 /** 불러온 프로필과 비교해 바뀐 필드만 모은다(Spring PATCH: 보내지 않은 필드는 기존 값 유지). */
 function toProfileChanges(profile: ProfileView, values: ProfileFormValues): ProfileChanges {
@@ -79,13 +84,22 @@ function ProfileForm({ profile }: { profile: ProfileView }) {
   const [errors, setErrors] = useState<Errors>({});
 
   const save = useMutation({
+    // 기본 정보(PATCH)와 핵심 기술 스택(PUT, 전체 교체)은 API가 따로다. 바뀐 쪽만 차례로 보낸다.
     mutationFn: async () => {
       const changes = toProfileChanges(profile, form);
-      if (Object.keys(changes).length === 0) return false;
-      const saved = unwrapApiResult(await updateProfileAction(changes));
-      queryClient.setQueryData<ProfileView>(adminQueryKeys.profile.all, (current) =>
-        current ? { ...current, ...saved } : current,
-      );
+      const skillIds = coreSkills.map((skill) => skill.skillId);
+      const skillsChanged = skillIds.join() !== profile.coreSkills.map((skill) => skill.skillId).join();
+      const profileChanged = Object.keys(changes).length > 0;
+      if (!profileChanged && !skillsChanged) return false;
+      if (skillIds.length > MAX_CORE_SKILLS) {
+        throw new Error(`핵심 기술 스택은 ${MAX_CORE_SKILLS}개까지 고를 수 있어요.`);
+      }
+      const update = (patch: Partial<ProfileView>) =>
+        queryClient.setQueryData<ProfileView>(adminQueryKeys.profile.all, (current) =>
+          current ? { ...current, ...patch } : current,
+        );
+      if (profileChanged) update(unwrapApiResult(await updateProfileAction(changes)));
+      if (skillsChanged) update({ coreSkills: unwrapApiResult(await updateProfileSkillsAction(skillIds)) });
       return true;
     },
   });
