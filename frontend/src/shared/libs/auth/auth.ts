@@ -18,6 +18,11 @@ export async function getAccessToken() {
   return readTokenPayload(token) ? (token ?? null) : null;
 }
 
+/** 로그아웃 때 Spring에 보낼 refresh 토큰 */
+export async function getRefreshToken() {
+  return (await cookies()).get(REFRESH_COOKIE)?.value ?? null;
+}
+
 /** 로그인 응답의 두 토큰을 쿠키에 담는다. 만료 시각은 각 토큰의 exp와 맞춘다. */
 export async function setSessionCookies(tokens: { accessToken: string; refreshToken: string }) {
   const access = readTokenPayload(tokens.accessToken);

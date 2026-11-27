@@ -62,3 +62,8 @@ export async function refreshTokens(refreshToken: string): Promise<AuthTokens> {
   const { response, body } = await postAuth("/api/auth/refresh", { refreshToken });
   return toAuthTokens(response, body);
 }
+
+/** Spring에 저장된 refresh 토큰을 지운다. 이후 그 refresh로는 재발급할 수 없다. */
+export async function signOut(refreshToken: string): Promise<void> {
+  await postAuth("/api/auth/logout", { refreshToken });
+}
