@@ -7,7 +7,9 @@ import { type FormEvent, useState } from "react";
 import { clearDraft, useSaveDraftOnExpire, useStoredDraft } from "@/features/auth/hooks/use-session-draft";
 import { SkillPicker } from "@/features/skill/ui/skill-picker";
 import { adminQueryKeys, isApiError, unwrapApiResult } from "@/shared/libs/api";
-import type { PostDetailResponse, PostSaveRequest } from "@/shared/_controllers/_legacy-types";
+import type { UpdatePostRequestDto } from "@/shared/_generated";
+import type { PostEditView, PostMediaView } from "@/shared/_controllers/post";
+import { prepareImage } from "@/shared/libs/upload/upload-image";
 import { EditorPlaceholder } from "@/shared/components/admin/editor-placeholder";
 import { AdminPageHeader } from "@/shared/components/admin/page-header";
 import { AdminPanel } from "@/shared/components/admin/panel";
@@ -17,9 +19,12 @@ import { Button } from "@/shared/components/button";
 import { ButtonCompact } from "@/shared/components/button-compact";
 import { AlertDanger, FormLabel, FormMessage, Textarea, TextField } from "@/shared/components/form";
 import { SLUG_PATTERN, toSlug } from "@/shared/utils";
-import { createPostAction, updatePostAction } from "@/shared/_controllers/post/post.action";
+import { createPostAction, updatePostAction, uploadPostImageAction } from "@/shared/_controllers/post/post.action";
 
 // Figma 관리자 · 게시글 작성 / 수정. 상태는 컴포넌트 state, 검증은 등록할 때 직접 한다(설계 문서 2절).
+// 본문 이미지는 올릴 때마다 Spring이 id를 준다. 저장할 때 본문에 남아 있는 이미지의 id만 보내 게시글에 연결한다
+// (지운 이미지는 연결되지 않고, 연결되지 않은 이미지는 Spring 스케줄러가 정리한다).
+// 수정은 Spring PATCH 방식이다: 불러온 값과 비교해 바뀐 필드만 보내고, 바뀐 게 없으면 요청하지 않는다.
 const MarkdownEditor = dynamic(() => import("@/shared/components/markdown-editor/markdown-editor"), {
   ssr: false,
   loading: () => <EditorPlaceholder />,
@@ -27,7 +32,7 @@ const MarkdownEditor = dynamic(() => import("@/shared/components/markdown-editor
 
 type Errors = Partial<Record<"title" | "slug" | "summary" | "skills" | "content", string>>;
 
-type PostFormProps = { post?: PostDetailResponse };
+type PostFormProps = { post?: PostEditView };
 
 /** 401로 로그인이 끊겼을 때 보관하는 작성 중 내용 */
 type PostDraft = {
@@ -37,7 +42,34 @@ type PostDraft = {
   summary: string;
   skillIds: number[];
   content: string;
+  /** 이 글에 넣었던 이미지(기존 + 새로 올린 것). 저장할 때 본문에 남은 것만 보낸다. */
+  medias: PostMediaView[];
 };
+
+/** 본문에 남아 있는 이미지의 id (본문에 처음 나오는 순서) */
+function mediaIdsInContent(content: string, medias: PostMediaView[]) {
+  return medias
+    .filter((media) => content.includes(media.url))
+    .sort((a, b) => content.indexOf(a.url) - content.indexOf(b.url))
+    .map((media) => media.id);
+}
+
+const sameIds = (a: number[], b: number[]) => a.join() === b.join();
+
+/** 저장된 글과 비교해 바뀐 필드만 모은다(Spring PATCH). */
+function toPostChanges(
+  post: PostEditView,
+  next: Omit<PostDraft, "slug" | "slugTouched" | "medias"> & { postMediaIds: number[] },
+) {
+  const changes: UpdatePostRequestDto = {};
+  if (next.title !== post.title) changes.postTitle = next.title;
+  if (next.summary !== post.summary) changes.postSummary = next.summary;
+  if (next.content !== post.content) changes.postContent = next.content;
+  if (!sameIds(next.skillIds, post.skillIds)) changes.skillIds = next.skillIds;
+  const savedMediaIds = mediaIdsInContent(post.content, post.medias);
+  if (!sameIds(next.postMediaIds, savedMediaIds)) changes.postMediaIds = next.postMediaIds;
+  return changes;
+}
 
 // 보관된 초안이 있으면 그것을 폼의 초기값으로 쓴다(다시 로그인한 뒤 복원).
 export function PostForm({ post }: PostFormProps) {
@@ -59,8 +91,9 @@ function PostFormBody(props: PostFormProps & { draftKey: string; draft: PostDraf
     slug: post?.slug ?? draft?.slug ?? "",
     slugTouched: draft?.slugTouched ?? isEdit,
     summary: draft?.summary ?? post?.summary ?? "",
-    skillIds: draft?.skillIds ?? post?.skills.map((skill) => skill.skillId) ?? [],
+    skillIds: draft?.skillIds ?? post?.skillIds ?? [],
     content: draft?.content ?? post?.content ?? "",
+    medias: draft?.medias ?? post?.medias ?? [],
   }));
   const { title, slug, slugTouched, summary, skillIds, content } = form;
   const [slugStatus, setSlugStatus] = useState<SlugStatus>(isEdit ? "available" : "idle");
@@ -69,9 +102,33 @@ function PostFormBody(props: PostFormProps & { draftKey: string; draft: PostDraf
     setForm((current) => ({ ...current, [key]: value }));
   useSaveDraftOnExpire<PostDraft>(draftKey, form);
 
+  // 에디터가 이미지를 올릴 때 부른다. 브라우저에서 WebP로 바꾼 뒤 올리고, 받은 id를 기억한다.
+  async function uploadImage(file: File) {
+    const image = new FormData();
+    image.append("image", await prepareImage(file, "post"));
+    const media = unwrapApiResult(await uploadPostImageAction(image));
+    setForm((current) => ({ ...current, medias: [...current.medias, media] }));
+    return { url: media.url };
+  }
+
   const save = useMutation({
-    mutationFn: async (request: PostSaveRequest) =>
-      unwrapApiResult(await (post ? updatePostAction(post.postId, request) : createPostAction(request))),
+    mutationFn: async (fields: Omit<PostDraft, "slugTouched" | "medias"> & { postMediaIds: number[] }) => {
+      if (!post) {
+        unwrapApiResult(
+          await createPostAction({
+            postTitle: fields.title,
+            postSlug: fields.slug,
+            postSummary: fields.summary,
+            postContent: fields.content,
+            skillIds: fields.skillIds,
+            postMediaIds: fields.postMediaIds,
+          }),
+        );
+        return;
+      }
+      const changes = toPostChanges(post, fields);
+      if (Object.keys(changes).length > 0) unwrapApiResult(await updatePostAction(post.postId, changes));
+    },
     onSuccess: async () => {
       clearDraft(draftKey);
       await Promise.all([
@@ -89,10 +146,13 @@ function PostFormBody(props: PostFormProps & { draftKey: string; draft: PostDraf
     event.preventDefault();
     const next: Errors = {};
     if (!title.trim()) next.title = "제목을 입력해 주세요.";
+    else if (title.trim().length > 100) next.title = "제목은 100자까지 쓸 수 있어요.";
     if (!slug) next.slug = "슬러그를 입력해 주세요.";
     else if (!SLUG_PATTERN.test(slug)) next.slug = "영문 소문자, 숫자, 하이픈(-)만 쓸 수 있어요.";
     if (!summary.trim()) next.summary = "요약을 입력해 주세요.";
+    else if (summary.trim().length > 200) next.summary = "요약은 200자까지 쓸 수 있어요.";
     if (skillIds.length === 0) next.skills = "기술 스택을 하나 이상 골라 주세요.";
+    else if (skillIds.length > 20) next.skills = "기술 스택은 20개까지 고를 수 있어요.";
     if (!content.trim()) next.content = "본문을 입력해 주세요.";
     setErrors(next);
     if (Object.keys(next).length > 0) return;
@@ -108,7 +168,14 @@ function PostFormBody(props: PostFormProps & { draftKey: string; draft: PostDraf
       setSlugStatus(available ? "available" : "taken");
       if (!available) return;
     }
-    save.mutate({ title: title.trim(), slug, summary: summary.trim(), content, skillIds });
+    save.mutate({
+      title: title.trim(),
+      slug,
+      summary: summary.trim(),
+      content,
+      skillIds,
+      postMediaIds: mediaIdsInContent(content, form.medias),
+    });
   }
 
   return (
@@ -188,6 +255,7 @@ function PostFormBody(props: PostFormProps & { draftKey: string; draft: PostDraf
           value={content}
           onChange={(markdown) => setField("content", markdown)}
           kind="post"
+          uploadImage={uploadImage}
           invalid={Boolean(errors.content)}
         />
         {errors.content && <FormMessage status="error">{errors.content}</FormMessage>}

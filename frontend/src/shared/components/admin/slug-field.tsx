@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { adminFetch } from "@/shared/libs/api";
-import type { SlugCheckResponse } from "@/shared/_controllers/_legacy-types";
+
 import { SLUG_PATTERN } from "@/shared/utils";
 import { Button } from "@/shared/components/button";
 import { FormLabel, FormMessage, TextField } from "@/shared/components/form";
@@ -22,7 +22,7 @@ type SlugFieldProps = {
 };
 
 export async function checkSlug(type: "post" | "project", slug: string) {
-  const { available } = await adminFetch<SlugCheckResponse>(
+  const { available } = await adminFetch<{ available: boolean }>(
     `/api/admin/slug-check?type=${type}&slug=${encodeURIComponent(slug)}`,
   );
   return available;

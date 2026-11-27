@@ -3,7 +3,7 @@
 import { NodeSelection } from "@tiptap/pm/state";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
-import { useImageUpload } from "@/shared/libs/upload/use-image-upload";
+import { type UploadImage, useImageUpload } from "@/shared/libs/upload/use-image-upload";
 import { useDismiss } from "@/shared/hooks";
 import { AlertDanger } from "@/shared/components/form";
 import { Icon } from "@/shared/components/icon";
@@ -39,7 +39,13 @@ export type MarkdownEditorProps = {
   onChange: (markdown: string) => void;
   /** post: 본문에 이미지를 넣는다 · project: 이미지는 갤러리에서만 관리해 이미지 기능을 숨긴다 */
   kind: "post" | "project";
+  /** 본문 이미지를 올리고 주소를 돌려준다(post에서만 쓴다). 업로드 API는 화면(폼)이 정한다. */
+  uploadImage?: UploadImage;
   invalid?: boolean;
+};
+
+const NO_UPLOAD: UploadImage = async () => {
+  throw new Error("이미지를 올릴 수 없는 에디터예요.");
 };
 
 type Mode = "edit" | "markdown";
@@ -57,11 +63,11 @@ const SHORTCUTS = [
 ] as const;
 
 export default function MarkdownEditor(props: MarkdownEditorProps) {
-  const { value, onChange, kind, invalid } = props;
+  const { value, onChange, kind, uploadImage = NO_UPLOAD, invalid } = props;
   const [mode, setMode] = useState<Mode>("edit");
   const [fullscreen, setFullscreen] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
-  const imageUpload = useImageUpload("post");
+  const imageUpload = useImageUpload(uploadImage);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const allowImages = kind === "post";

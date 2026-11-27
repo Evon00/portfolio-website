@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { getCachedPostDetail, getCachedPostSummaries } from "@/shared/_controllers/post/index.server";
+import { getCachedLatestPosts, getCachedPostDetail } from "@/shared/_controllers/post/index.server";
 import { ViewCount } from "@/features/post/ui/view-count";
 import { ArticleFooter } from "@/shared/components/back-button";
 import { Container } from "@/shared/components/container";
@@ -17,8 +17,9 @@ import { ScrollTopLink } from "@/shared/components/scroll-top-link";
 // Cache Components에서는 빈 배열이면 빌드 오류라, 글이 없을 때는 자리표시 slug 하나를 돌려주고 notFound로 처리한다.
 const PLACEHOLDER_SLUG = "__placeholder__";
 
+// 미리 만드는 글은 최신 50개(Spring 페이지 크기 상한)다. 그보다 오래된 글은 첫 요청 때 만든다.
 export async function generateStaticParams() {
-  const posts = await getCachedPostSummaries();
+  const posts = await getCachedLatestPosts(50);
   return posts.length > 0 ? posts.map((post) => ({ slug: post.slug })) : [{ slug: PLACEHOLDER_SLUG }];
 }
 

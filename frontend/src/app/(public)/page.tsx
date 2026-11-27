@@ -1,5 +1,4 @@
-import { getCachedPostSummaries } from "@/shared/_controllers/post/index.server";
-import { toPostCardView } from "@/shared/_controllers/post";
+import { getCachedLatestPosts } from "@/shared/_controllers/post/index.server";
 import { BlogCardFeatured, BlogCardItem } from "@/features/post/ui/blog-cards";
 import { getCachedProfile } from "@/shared/_controllers/profile/index.server";
 import { getCachedProjectSummaries } from "@/shared/_controllers/project/index.server";
@@ -46,7 +45,7 @@ async function FeaturedProjects() {
 async function LatestPosts() {
   let posts;
   try {
-    posts = (await getCachedPostSummaries()).slice(0, 4).map(toPostCardView);
+    posts = await getCachedLatestPosts(4);
   } catch {
     return (
       <div className="flex flex-col gap-10">

@@ -6,20 +6,22 @@ import { Container } from "@/shared/components/container";
 import { EmptyState } from "@/shared/components/empty-state";
 import { ListHeading, TotalCount } from "@/shared/components/list-heading";
 import { Pagination } from "@/shared/components/pagination";
-import type { PostCardView } from "@/shared/_controllers/post";
-import { filterPosts, type SearchScope, type SortOption } from "@/shared/_controllers/post";
+import { InlineError } from "@/shared/components/inline-error";
+import { type PostCardView, type PostPage, type SearchScope, type SortOption } from "@/shared/_controllers/post";
 import { BlogRow } from "./blog-cards";
 import { SearchBar } from "./search-bar";
 import { SearchScopeChips } from "./search-scope-chips";
 import { SortToggle } from "./sort-toggle";
 
-// 블로그 목록: 캐시된 전체 요약 목록을 받아 브라우저에서 검색·정렬·페이지를 처리한다(설계 문서 6절).
-// "내용" 검색은 요약(summary)에서 찾는다. 한 페이지 5개.
+// 블로그 목록: 검색·정렬·페이지는 Spring이 한다. 첫 화면(기본 조건)은 서버가 그린 initial을 쓰고,
+// 조건을 바꾸면 공개 Route Handler(/api/posts, 조건별 캐시)에서 그 쪽을 받아 온다. 받는 동안은 앞 화면을 그대로 둔다.
+// "내용" 검색은 본문에서 찾는다. 한 페이지 5개.
 // 768 미만: 검색바 아래 검색 조건 칩, 글 수와 정렬은 그 아래 한 줄 (Figma 블로그 목록 · 375).
-const PAGE_SIZE = 5;
 const DEFAULTS = { q: "", scope: "title", sort: "latest", page: "1" };
 
-export function BlogExplorer({ posts }: { posts: PostCardView[] }) {
+type Loaded = { key: string; data: PostPage<PostCardView> | null };
+
+export function BlogExplorer({ initial }: { initial: PostPage<PostCardView> }) {
   const [state, update] = useUrlState(DEFAULTS);
   const scope = state.scope as SearchScope;
   const sort = state.sort as SortOption;
@@ -31,11 +33,32 @@ export function BlogExplorer({ posts }: { posts: PostCardView[] }) {
   }, [state.q]);
 
   const keyword = state.q.trim();
-  const filtered = filterPosts(posts, keyword, scope, sort);
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const page = Math.min(Math.max(1, Number(state.page) || 1), totalPages);
-  const visible = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const count = <TotalCount count={filtered.length} unit="개의 글" />;
+  const requestedPage = Math.max(1, Number(state.page) || 1);
+  // 검색어가 없으면 검색 범위는 결과에 영향이 없으므로 기본 조건으로 본다.
+  const isDefault = !keyword && sort === "latest" && requestedPage === 1;
+  const query = new URLSearchParams({ q: keyword, scope, sort, page: String(requestedPage) }).toString();
+  const [loaded, setLoaded] = useState<Loaded | null>(null);
+  const [retry, setRetry] = useState(0);
+
+  useEffect(() => {
+    if (isDefault) return;
+    const controller = new AbortController();
+    fetch(`/api/posts?${query}`, { signal: controller.signal })
+      .then((response) => (response.ok ? (response.json() as Promise<PostPage<PostCardView>>) : Promise.reject()))
+      .then((data) => setLoaded({ key: query, data }))
+      .catch(() => {
+        if (!controller.signal.aborted) setLoaded({ key: query, data: null });
+      });
+    return () => controller.abort();
+  }, [isDefault, query, retry]);
+
+  const failed = !isDefault && loaded?.key === query && !loaded.data;
+  // 새 쪽을 받기 전에는 앞 화면을 그대로 보여 준다(깜빡임 방지).
+  const result = isDefault ? initial : (loaded?.data ?? initial);
+  const totalPages = result.totalPages;
+  const page = Math.min(requestedPage, totalPages);
+  const visible = result.items;
+  const count = <TotalCount count={result.totalElements} unit="개의 글" />;
 
   const search = (q = draft) => update({ q, page: "1" });
   const reset = () => {
@@ -97,7 +120,14 @@ export function BlogExplorer({ posts }: { posts: PostCardView[] }) {
       </Container>
 
       <Container className="pt-4 pb-fluid-96-120">
-        {visible.length > 0 ? (
+        {failed ? (
+          <InlineError
+            title="블로그 글을 불러오지 못했어요"
+            description="잠시 뒤 다시 시도해 주세요."
+            onRetry={() => setRetry((count) => count + 1)}
+            className="mt-10"
+          />
+        ) : visible.length > 0 ? (
           <>
             <ul>
               {visible.map((post) => (
