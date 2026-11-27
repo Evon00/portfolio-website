@@ -18,7 +18,7 @@ export interface FindPostBySlugResponseDto {
   postSlug: string;
   /** 썸네일 URL (본문 첫 번째 업로드 이미지, 없으면 null) */
   postThumbnailUrl: string | null;
-  /** 조회수 (이번 조회 반영) */
+  /** 현재 조회수 */
   postView: number;
   /** 본문 수정일 (수정 전이면 null) */
   postModifiedAt: string | null;

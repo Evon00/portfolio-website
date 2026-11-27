@@ -14,6 +14,7 @@ export type * from "./find-post-path";
 export type * from "./find-project-by-slug-path";
 export type * from "./find-project-path";
 export type * from "./find-skill-stats-query";
+export type * from "./increase-post-view-path";
 export type * from "./update-post-path";
 export type * from "./update-project-path";
 export type * from "./update-project-priority-path";
