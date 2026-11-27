@@ -1,86 +1,105 @@
 import "server-only";
 
 import type {
-  ProjectDetailResponse,
-  ProjectOrderRequest,
-  ProjectSaveRequest,
-  ProjectSummaryResponse,
-  SlugCheckResponse,
-} from "@/shared/_controllers/_legacy-types";
+  CheckProjectSlugResponseDto,
+  CreateProjectResponseDto,
+  FindProjectBySlugResponseDto,
+  FindProjectResponseDto,
+  PageResponseDtoFindAllAdminProjectsItem,
+  PageResponseDtoFindAllProjectsItem,
+  UpdateProjectPriorityRequestDto,
+  UpdateProjectPriorityResponseDto,
+  UpdateProjectResponseDto,
+} from "@/shared/_generated";
 import type {
+  CheckProjectSlugQuery,
   DeleteProjectPath,
-  GetProjectByIdPath,
-  GetProjectBySlugPath,
-  IsProjectSlugAvailableQuery,
+  FindAllAdminProjectsQuery,
+  FindAllProjectsQuery,
+  FindProjectBySlugPath,
+  FindProjectPath,
   UpdateProjectPath,
-} from "@/shared/_controllers/_legacy-types";
+  UpdateProjectPriorityPath,
+} from "@/shared/_generated";
 import { publicApiClient, adminApiClient } from "@/shared/libs/api/client";
 
-export type CreateProjectBody = ProjectSaveRequest;
-export type CreateProjectResponse = ProjectDetailResponse;
+export type CheckProjectSlugQueryParams = CheckProjectSlugQuery;
+export type CheckProjectSlugResponse = CheckProjectSlugResponseDto;
+export type CreateProjectBody = FormData;
+export type CreateProjectResponse = CreateProjectResponseDto;
 export type DeleteProjectPathParams = DeleteProjectPath;
 export type DeleteProjectResponse = unknown;
-export type GetProjectByIdPathParams = GetProjectByIdPath;
-export type GetProjectByIdResponse = ProjectDetailResponse;
-export type GetProjectBySlugPathParams = GetProjectBySlugPath;
-export type GetProjectBySlugResponse = ProjectDetailResponse;
-export type GetProjectSummariesResponse = ProjectSummaryResponse[];
-export type IsProjectSlugAvailableQueryParams = IsProjectSlugAvailableQuery;
-export type IsProjectSlugAvailableResponse = SlugCheckResponse;
-export type UpdateProjectBody = ProjectSaveRequest;
+export type FindAllAdminProjectsQueryParams = FindAllAdminProjectsQuery;
+export type FindAllAdminProjectsResponse = PageResponseDtoFindAllAdminProjectsItem;
+export type FindAllProjectsQueryParams = FindAllProjectsQuery;
+export type FindAllProjectsResponse = PageResponseDtoFindAllProjectsItem;
+export type FindProjectPathParams = FindProjectPath;
+export type FindProjectResponse = FindProjectResponseDto;
+export type FindProjectBySlugPathParams = FindProjectBySlugPath;
+export type FindProjectBySlugResponse = FindProjectBySlugResponseDto;
+export type UpdateProjectBody = FormData;
 export type UpdateProjectPathParams = UpdateProjectPath;
-export type UpdateProjectResponse = ProjectDetailResponse;
-export type UpdateProjectOrderBody = ProjectOrderRequest;
-export type UpdateProjectOrderResponse = unknown;
+export type UpdateProjectResponse = UpdateProjectResponseDto;
+export type UpdateProjectPriorityBody = UpdateProjectPriorityRequestDto;
+export type UpdateProjectPriorityPathParams = UpdateProjectPriorityPath;
+export type UpdateProjectPriorityResponse = UpdateProjectPriorityResponseDto;
+
+export async function checkProjectSlug(params: CheckProjectSlugQueryParams) {
+  return adminApiClient<CheckProjectSlugResponse>("/api/admin/project/slug/check", {
+    method: "GET",
+    query: params,
+  });
+}
 
 export async function createProject(body: CreateProjectBody) {
-  return adminApiClient<CreateProjectResponse>("/api/admin/projects", {
+  return adminApiClient<CreateProjectResponse>("/api/admin/project", {
     method: "POST",
     body,
   });
 }
 
 export async function deleteProject(params: DeleteProjectPathParams) {
-  return adminApiClient<DeleteProjectResponse>(`/api/admin/projects/${params.projectId}`, {
+  return adminApiClient<DeleteProjectResponse>(`/api/admin/project/${params.projectId}`, {
     method: "DELETE",
   });
 }
 
-export async function getProjectById(params: GetProjectByIdPathParams) {
-  return adminApiClient<GetProjectByIdResponse>(`/api/admin/projects/${params.projectId}`, {
-    method: "GET",
-  });
-}
-
-export async function getProjectBySlug(params: GetProjectBySlugPathParams) {
-  return publicApiClient<GetProjectBySlugResponse>(`/api/projects/slug/${params.slug}`, {
-    method: "GET",
-  });
-}
-
-export async function getProjectSummaries() {
-  return publicApiClient<GetProjectSummariesResponse>("/api/projects", {
-    method: "GET",
-  });
-}
-
-export async function isProjectSlugAvailable(params: IsProjectSlugAvailableQueryParams) {
-  return adminApiClient<IsProjectSlugAvailableResponse>("/api/admin/projects/slug-check", {
+export async function findAllAdminProjects(params: FindAllAdminProjectsQueryParams = {}) {
+  return adminApiClient<FindAllAdminProjectsResponse>("/api/admin/project", {
     method: "GET",
     query: params,
   });
 }
 
+export async function findAllProjects(params: FindAllProjectsQueryParams = {}) {
+  return publicApiClient<FindAllProjectsResponse>("/api/project", {
+    method: "GET",
+    query: params,
+  });
+}
+
+export async function findProject(params: FindProjectPathParams) {
+  return adminApiClient<FindProjectResponse>(`/api/admin/project/${params.projectId}`, {
+    method: "GET",
+  });
+}
+
+export async function findProjectBySlug(params: FindProjectBySlugPathParams) {
+  return publicApiClient<FindProjectBySlugResponse>(`/api/project/${params.projectSlug}`, {
+    method: "GET",
+  });
+}
+
 export async function updateProject(params: UpdateProjectPathParams, body: UpdateProjectBody) {
-  return adminApiClient<UpdateProjectResponse>(`/api/admin/projects/${params.projectId}`, {
-    method: "PUT",
+  return adminApiClient<UpdateProjectResponse>(`/api/admin/project/${params.projectId}`, {
+    method: "PATCH",
     body,
   });
 }
 
-export async function updateProjectOrder(body: UpdateProjectOrderBody) {
-  return adminApiClient<UpdateProjectOrderResponse>("/api/admin/projects/order", {
-    method: "PUT",
+export async function updateProjectPriority(params: UpdateProjectPriorityPathParams, body: UpdateProjectPriorityBody) {
+  return adminApiClient<UpdateProjectPriorityResponse>(`/api/admin/project/${params.projectId}/priority`, {
+    method: "PATCH",
     body,
   });
 }

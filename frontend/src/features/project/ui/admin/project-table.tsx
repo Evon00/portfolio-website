@@ -20,7 +20,7 @@ import { ProjectOrderDialog } from "./project-order-dialog";
 // 열(Figma 1920): 순서 88 · 제목 / 슬러그(남는 폭) · 기간 260 · 기술 스택 400 · 이미지 96 · 관리 180.
 // 1920 미만에서는 1440까지 순서 64 · 기간 180 · 기술 스택 240으로 같이 줄어든다(wide 토큰). 이미지 · 관리는 고정.
 // 1280 미만에서는 기술 스택 열을 숨겨 제목이 보이게 하고, 제목 열은 최소 200(표 최소 폭 = 고정 열 520 + 200)을 지킨다.
-// 주요 프로젝트 표시(별)는 Figma 표에 없어 순서 · 주요 프로젝트 창에서만 보인다.
+// 메인 주요 프로젝트는 노출 순서 위에서부터 정해지므로 표에 따로 표시하지 않는다.
 const PAGE_SIZE = 5;
 
 export function ProjectTable() {
@@ -41,7 +41,7 @@ export function ProjectTable() {
         <>
           {projects && projects.length > 1 && (
             <Button variant="outline" size="M" onClick={() => setOrderOpen(true)}>
-              순서 · 주요 프로젝트
+              노출 순서
             </Button>
           )}
           <Button href="/admin/projects/new" size="M">

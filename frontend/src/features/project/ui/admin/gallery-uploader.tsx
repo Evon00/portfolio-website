@@ -2,7 +2,7 @@
 
 import { type Dispatch, type SetStateAction, useRef, useState } from "react";
 import { MAX_GALLERY_IMAGES } from "@/shared/libs/upload/upload-rules";
-import { uploadImage } from "@/shared/libs/upload/upload-image";
+import { prepareImage } from "@/shared/libs/upload/upload-image";
 import { useReorder } from "@/shared/hooks";
 import { AdminPanel } from "@/shared/components/admin/panel";
 import { FormMessage, TextField } from "@/shared/components/form";
@@ -11,17 +11,22 @@ import { cn } from "@/shared/utils";
 
 // Figma 프로젝트 작성 › 갤러리 이미지 + Upload / Gallery Tile.
 // 첫 장이 대표(썸네일). 다른 장의 "대표"를 누르면 맨 앞으로 옮긴다. 끌어서 순서 변경, x로 삭제, 설명은 선택.
+// 새 이미지는 고를 때 브라우저에서 변환만 해 두고(미리보기 blob:), 프로젝트를 저장할 때 함께 보낸다.
 export type GalleryItem = {
   key: string;
-  imageId: number | null;
+  /** 저장된 이미지의 id. 새로 고른 이미지는 null */
+  mediaId: number | null;
   url: string;
   caption: string;
   fileName: string;
-  /** 0~100. 올리는 중일 때만 있다 */
-  progress?: number;
+  /** 새로 고른 이미지의 변환된 파일. 저장할 때 보낸다 */
+  file?: File;
 };
 
-// onChange는 부모의 setState를 그대로 받는다. 업로드가 끝난 뒤의 반영은 함수형 갱신으로 최신 목록에 한다.
+/** Spring 이미지 설명 한도 */
+export const MAX_CAPTION_LENGTH = 50;
+
+// onChange는 부모의 setState를 그대로 받는다. 변환이 끝난 뒤의 반영은 함수형 갱신으로 최신 목록에 한다.
 type GalleryUploaderProps = { value: GalleryItem[]; onChange: Dispatch<SetStateAction<GalleryItem[]>> };
 
 export function GalleryUploader({ value, onChange }: GalleryUploaderProps) {
@@ -37,30 +42,25 @@ export function GalleryUploader({ value, onChange }: GalleryUploaderProps) {
     const room = MAX_GALLERY_IMAGES - value.length;
     if (files.length > room)
       setError("최대 10장까지 올릴 수 있어요. 새 이미지를 올리려면 기존 이미지를 먼저 지워 주세요.");
-    const accepted = files.slice(0, Math.max(room, 0));
-    const pending = accepted.map((file) => ({
-      key: crypto.randomUUID(),
-      imageId: null,
-      url: URL.createObjectURL(file),
-      caption: "",
-      fileName: file.name,
-      progress: 0,
-    }));
-    update((current) => [...current, ...pending]);
-    await Promise.all(
-      accepted.map(async (file, i) => {
-        const key = pending[i].key;
-        const patch = (fields: Partial<GalleryItem>) =>
-          update((current) => current.map((item) => (item.key === key ? { ...item, ...fields } : item)));
-        try {
-          const uploaded = await uploadImage(file, "project", (progress) => patch({ progress }));
-          patch({ imageId: uploaded.imageId, url: uploaded.url, progress: undefined });
-        } catch (failure) {
-          update((current) => current.filter((item) => item.key !== key));
-          setError(failure instanceof Error ? failure.message : "이미지를 올리지 못했어요.");
-        }
-      }),
+    const results = await Promise.allSettled(
+      files.slice(0, Math.max(room, 0)).map((file) => prepareImage(file, "project")),
     );
+    const added: GalleryItem[] = [];
+    for (const [i, result] of results.entries()) {
+      if (result.status === "rejected") {
+        setError(result.reason instanceof Error ? result.reason.message : "이미지를 추가하지 못했어요.");
+        continue;
+      }
+      added.push({
+        key: crypto.randomUUID(),
+        mediaId: null,
+        url: URL.createObjectURL(result.value),
+        caption: "",
+        fileName: files[i].name,
+        file: result.value,
+      });
+    }
+    update((current) => [...current, ...added].slice(0, MAX_GALLERY_IMAGES));
   }
 
   return (
@@ -95,13 +95,8 @@ export function GalleryUploader({ value, onChange }: GalleryUploaderProps) {
                   isThumbnail ? "border-2 border-primary" : "border border-line-01",
                 )}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element -- 업로드 직후 미리보기(blob:)라 next/image를 쓰지 않는다 */}
+                {/* eslint-disable-next-line @next/next/no-img-element -- 새 이미지는 저장 전 미리보기(blob:)라 next/image를 쓰지 않는다 */}
                 <img src={item.url} alt="" className="size-full object-cover" />
-                {item.progress !== undefined && (
-                  <span className="absolute inset-0 flex items-center justify-center bg-content-01/40 font-mono text-mono-l text-content-inverse">
-                    {item.progress}%
-                  </span>
-                )}
                 <button
                   type="button"
                   className="absolute top-2 left-2 flex size-7 cursor-grab items-center justify-center rounded-xl bg-background-01 text-primary-strong"
@@ -143,6 +138,7 @@ export function GalleryUploader({ value, onChange }: GalleryUploaderProps) {
                     value.map((other) => (other.key === item.key ? { ...other, caption: event.target.value } : other)),
                   )
                 }
+                maxLength={MAX_CAPTION_LENGTH}
                 placeholder="이미지 설명 (선택)"
                 aria-label={`${item.fileName} 설명`}
                 wrapperClassName="h-[34px] bg-background-01 px-2.5 focus-within:px-[9px]"

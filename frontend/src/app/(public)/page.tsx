@@ -1,8 +1,8 @@
 import { getCachedLatestPosts } from "@/shared/_controllers/post/index.server";
 import { BlogCardFeatured, BlogCardItem } from "@/features/post/ui/blog-cards";
 import { getCachedProfile } from "@/shared/_controllers/profile/index.server";
-import { getCachedProjectSummaries } from "@/shared/_controllers/project/index.server";
-import { toProjectCardView } from "@/shared/_controllers/project";
+import { getCachedProjects } from "@/shared/_controllers/project/index.server";
+import { FEATURED_PROJECT_COUNT } from "@/shared/_controllers/project";
 import { FeaturedProjectsCarousel } from "@/features/project/ui/featured-projects-carousel";
 import { Container } from "@/shared/components/container";
 import { TextLink } from "@/shared/components/text-link";
@@ -30,7 +30,8 @@ export default async function HomePage() {
 async function FeaturedProjects() {
   let projects;
   try {
-    projects = (await getCachedProjectSummaries()).filter((project) => project.featured).map(toProjectCardView);
+    // 메인 주요 프로젝트 = 노출 순서 상위 N개
+    projects = (await getCachedProjects()).slice(0, FEATURED_PROJECT_COUNT);
   } catch {
     return (
       <div className="flex flex-col gap-10">

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { getCachedProjectSummaries } from "@/shared/_controllers/project/index.server";
-import { toProjectCardView } from "@/shared/_controllers/project";
+import { getCachedProjects } from "@/shared/_controllers/project/index.server";
 import { ProjectList } from "@/features/project/ui/project-list";
 import { Container } from "@/shared/components/container";
 import { ListHeading, TotalCount } from "@/shared/components/list-heading";
@@ -8,7 +7,7 @@ import { ListHeading, TotalCount } from "@/shared/components/list-heading";
 export const metadata: Metadata = { title: "프로젝트" };
 
 export default async function ProjectsPage() {
-  const projects = (await getCachedProjectSummaries()).map(toProjectCardView);
+  const projects = await getCachedProjects();
   return (
     <>
       <Container className="pt-fluid-40-56">

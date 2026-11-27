@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { getCachedProjectDetail, getCachedProjectSummaries } from "@/shared/_controllers/project/index.server";
+import { getCachedProjectDetail, getCachedProjects } from "@/shared/_controllers/project/index.server";
 import { formatPeriod } from "@/shared/_controllers/project";
 import { Gallery } from "@/features/project/ui/gallery";
 import { ArticleFooter } from "@/shared/components/back-button";
@@ -16,7 +16,7 @@ import { TextLink } from "@/shared/components/text-link";
 const PLACEHOLDER_SLUG = "__placeholder__";
 
 export async function generateStaticParams() {
-  const projects = await getCachedProjectSummaries();
+  const projects = await getCachedProjects();
   return projects.length > 0 ? projects.map((project) => ({ slug: project.slug })) : [{ slug: PLACEHOLDER_SLUG }];
 }
 
@@ -58,7 +58,7 @@ async function ProjectDetailPageContent({ params }: Pick<PageProps<"/projects/[s
         <div className="mt-7 flex flex-col gap-5">
           <ul className="flex flex-wrap gap-2">
             {project.skills.map((skill) => (
-              <li key={skill.skillId}>
+              <li key={skill.name}>
                 <SkillChipMedium skill={skill} />
               </li>
             ))}
@@ -103,10 +103,7 @@ async function ProjectDetailPageContent({ params }: Pick<PageProps<"/projects/[s
         <div className="relative">
           <PaperAsset name="blob-lavender-surprised" className="-top-[75px] left-16 h-[89px] w-[134px]" />
           <div className="relative">
-            <Gallery
-              title={project.title}
-              images={project.images.map((image) => ({ url: image.url, caption: image.caption }))}
-            />
+            <Gallery title={project.title} images={project.images} />
           </div>
         </div>
       </Container>

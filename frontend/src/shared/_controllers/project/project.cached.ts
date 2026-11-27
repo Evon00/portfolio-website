@@ -1,16 +1,18 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { CACHE_TAGS, isApiError } from "@/shared/libs/api";
 import { renderMarkdown } from "@/shared/libs/markdown/render";
-import { getProjectBySlug, getProjectSummaries } from "./project.service";
+import { findAllProjects, findProjectBySlug } from "./project.service";
+import { PROJECT_LIST_SIZE, toProjectCardView, toProjectDetailView } from "./project.types";
 
 // 공개 페이지 캐시 (설계 문서 6절). 목록 hours, 상세 days.
 
-/** 프로젝트 목록·메인 캐러셀이 쓰는 전체 요약 목록 */
-export async function getCachedProjectSummaries() {
+/** 프로젝트 목록·메인 캐러셀이 쓰는 전체 목록(노출 순서대로) */
+export async function getCachedProjects() {
   "use cache";
   cacheTag(CACHE_TAGS.projects, CACHE_TAGS.skills);
   cacheLife("hours");
-  return getProjectSummaries();
+  const page = await findAllProjects({ pageNumber: 0, pageSize: PROJECT_LIST_SIZE });
+  return page.content.map(toProjectCardView);
 }
 
 /** 상세 + 렌더링된 본문 HTML */
@@ -19,7 +21,7 @@ export async function getCachedProjectDetail(slug: string) {
   cacheTag(CACHE_TAGS.skills);
   cacheLife("days");
   // 없는 프로젝트는 404로 오고, 화면(notFound)이 쓰도록 여기 한 곳에서만 null로 바꾼다.
-  const project = await getProjectBySlug({ slug }).catch((error: unknown) => {
+  const project = await findProjectBySlug({ projectSlug: slug }).catch((error: unknown) => {
     if (isApiError(error) && error.status === 404) return null;
     throw error;
   });
@@ -29,6 +31,6 @@ export async function getCachedProjectDetail(slug: string) {
     return null;
   }
   cacheTag(CACHE_TAGS.project(project.projectId));
-  const html = await renderMarkdown(project.content);
-  return { project, html };
+  const html = await renderMarkdown(project.projectContent);
+  return { project: toProjectDetailView(project), html };
 }

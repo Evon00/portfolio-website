@@ -7,7 +7,8 @@ import { type Dispatch, type FormEvent, type ReactNode, type SetStateAction, use
 import { clearDraft, useSaveDraftOnExpire, useStoredDraft } from "@/features/auth/hooks/use-session-draft";
 import { SkillPicker } from "@/features/skill/ui/skill-picker";
 import { adminQueryKeys, isApiError, unwrapApiResult } from "@/shared/libs/api";
-import type { ProjectDetailResponse, ProjectSaveRequest } from "@/shared/_controllers/_legacy-types";
+import type { CreateProjectRequestDto, UpdateProjectRequestDto } from "@/shared/_generated";
+import type { ProjectEditView } from "@/shared/_controllers/project";
 import { EditorPlaceholder } from "@/shared/components/admin/editor-placeholder";
 import { AdminPageHeader } from "@/shared/components/admin/page-header";
 import { AdminPanel } from "@/shared/components/admin/panel";
@@ -21,6 +22,7 @@ import { createProjectAction, updateProjectAction } from "@/shared/_controllers/
 import { type GalleryItem, GalleryUploader } from "./gallery-uploader";
 
 // Figma 관리자 · 프로젝트 작성 / 수정. 본문 에디터는 이미지 기능을 숨기고, 이미지는 갤러리에서만 관리한다.
+// 저장은 multipart다: data(JSON) + files(새 이미지). 수정은 Spring PATCH 방식대로 바뀐 필드만 보내고, 바뀐 게 없으면 요청하지 않는다.
 const MarkdownEditor = dynamic(() => import("@/shared/components/markdown-editor/markdown-editor"), {
   ssr: false,
   loading: () => <EditorPlaceholder />,
@@ -42,17 +44,103 @@ function parseDate(text: string) {
 const toDotted = (iso: string | null) => (iso ? iso.replaceAll("-", ".") : "");
 const isUrl = (text: string) => /^https?:\/\/\S+$/.test(text);
 
-function toGalleryItems(project?: ProjectDetailResponse): GalleryItem[] {
+// Spring 검증과 같은 한도
+const MAX_LENGTH = { title: 100, summary: 200, url: 300 } as const;
+const MAX_SKILLS = 20;
+
+function toGalleryItems(project?: ProjectEditView): GalleryItem[] {
   return (project?.images ?? []).map((image) => ({
-    key: String(image.imageId),
-    imageId: image.imageId,
+    key: String(image.id),
+    mediaId: image.id,
     url: image.url,
     caption: image.caption ?? "",
-    fileName: decodeURIComponent(image.url.split("/").pop() ?? `image-${image.imageId}`),
+    fileName: image.fileName,
   }));
 }
 
-/** 401로 로그인이 끊겼을 때 보관하는 작성 중 내용 (갤러리는 올라간 이미지만) */
+/** 저장할 값. 빈 주소·종료일은 ""(없음)로 다룬다. */
+type ProjectValues = {
+  title: string;
+  summary: string;
+  content: string;
+  startDate: string;
+  endDate: string;
+  githubUrl: string;
+  repoPrivate: boolean;
+  demoUrl: string;
+  skillIds: number[];
+  gallery: GalleryItem[];
+};
+
+/** 갤러리 → Spring projectMedias + files. 저장된 이미지는 id로, 새 이미지는 files 순서(fileIndex)로 가리킨다. 첫 장이 대표. */
+function toProjectMedias(gallery: GalleryItem[]) {
+  const files: File[] = [];
+  const medias = gallery.map((item, index) => {
+    const meta = { projectMediaCaption: item.caption.trim() || undefined, projectMediaIsImportant: index === 0 };
+    if (item.mediaId !== null) return { projectMediaId: item.mediaId, ...meta };
+    if (item.file) files.push(item.file);
+    return { fileIndex: files.length - 1, ...meta };
+  });
+  return { medias, files };
+}
+
+/** 갤러리가 바뀌었는지 비교하는 값(이미지와 순서, 설명) */
+const galleryKey = (gallery: GalleryItem[]) =>
+  JSON.stringify(gallery.map((item) => [item.mediaId ?? item.key, item.caption.trim()]));
+
+/** 불러온 프로젝트와 비교해 바뀐 필드만 모은다(Spring PATCH: 보내지 않은 필드는 기존 값 유지, ""는 지움). */
+function toProjectChanges(project: ProjectEditView, values: ProjectValues) {
+  const changes: UpdateProjectRequestDto = {};
+  if (values.title !== project.title) changes.projectTitle = values.title;
+  if (values.summary !== project.summary) changes.projectSummary = values.summary;
+  if (values.content !== project.content) changes.projectContent = values.content;
+  if (values.startDate !== project.startDate) changes.projectStartDate = values.startDate;
+  if (values.endDate !== (project.endDate ?? "")) changes.projectEndDate = values.endDate;
+  if (values.githubUrl !== (project.githubUrl ?? "")) changes.projectGithubUrl = values.githubUrl;
+  if (values.repoPrivate !== project.repoPrivate) changes.projectGithubIsPublic = !values.repoPrivate;
+  if (values.demoUrl !== (project.demoUrl ?? "")) changes.projectUrl = values.demoUrl;
+  if (values.skillIds.join() !== project.skillIds.join()) changes.skillIds = values.skillIds;
+  let files: File[] = [];
+  if (galleryKey(values.gallery) !== galleryKey(toGalleryItems(project))) {
+    const media = toProjectMedias(values.gallery);
+    changes.projectMedias = media.medias;
+    files = media.files;
+  }
+  return { changes, files };
+}
+
+/** 등록 요청. 갤러리는 모두 새 이미지다. */
+function toCreateRequest(slug: string, values: ProjectValues) {
+  const files = values.gallery.flatMap((item) => (item.file ? [item.file] : []));
+  const data: CreateProjectRequestDto = {
+    projectTitle: values.title,
+    projectSlug: slug,
+    projectSummary: values.summary,
+    projectContent: values.content,
+    projectStartDate: values.startDate,
+    projectEndDate: values.endDate || undefined,
+    projectGithubUrl: values.githubUrl || undefined,
+    projectGithubIsPublic: !values.repoPrivate,
+    projectUrl: values.demoUrl || undefined,
+    skillIds: values.skillIds,
+    projectMedias: files.map((_, index) => ({
+      fileIndex: index,
+      projectMediaCaption: values.gallery[index].caption.trim() || undefined,
+      projectMediaIsImportant: index === 0,
+    })),
+  };
+  return { data, files };
+}
+
+/** 서버 액션으로 넘기는 본문: data(JSON 문자열) + files */
+function toFormData(data: object, files: File[]) {
+  const form = new FormData();
+  form.append("data", JSON.stringify(data));
+  for (const file of files) form.append("files", file);
+  return form;
+}
+
+/** 401로 로그인이 끊겼을 때 보관하는 작성 중 내용 (갤러리는 저장된 이미지만) */
 type ProjectDraft = {
   title: string;
   slug: string;
@@ -71,14 +159,14 @@ type ProjectDraft = {
 };
 
 // 보관된 초안이 있으면 그것을 폼의 초기값으로 쓴다(다시 로그인한 뒤 복원).
-export function ProjectForm({ project }: { project?: ProjectDetailResponse }) {
+export function ProjectForm({ project }: { project?: ProjectEditView }) {
   const draftKey = project ? `project:${project.projectId}` : "project:new";
   const { ready, draft } = useStoredDraft<ProjectDraft>(draftKey);
   if (!ready) return <AdminLoading />;
   return <ProjectFormBody project={project} draftKey={draftKey} draft={draft} />;
 }
 
-type ProjectFormBodyProps = { project?: ProjectDetailResponse; draftKey: string; draft: ProjectDraft | null };
+type ProjectFormBodyProps = { project?: ProjectEditView; draftKey: string; draft: ProjectDraft | null };
 
 function ProjectFormBody(props: ProjectFormBodyProps) {
   const { project, draftKey, draft } = props;
@@ -100,7 +188,7 @@ function ProjectFormBody(props: ProjectFormBodyProps) {
     demoUrl: draft?.demoUrl ?? project?.demoUrl ?? "",
     // 사이트 없음: 수정할 때는 저장된 주소가 없으면 체크된 채로 연다. 체크를 풀면 입력해 둔 주소가 돌아온다.
     noSite: draft?.noSite ?? (project ? project.demoUrl === null : false),
-    skillIds: draft?.skillIds ?? project?.skills.map((skill) => skill.skillId) ?? [],
+    skillIds: draft?.skillIds ?? project?.skillIds ?? [],
     gallery: draft?.gallery ?? toGalleryItems(project),
     content: draft?.content ?? project?.content ?? "",
   }));
@@ -110,16 +198,24 @@ function ProjectFormBody(props: ProjectFormBodyProps) {
   const [slugStatus, setSlugStatus] = useState<SlugStatus>(isEdit ? "available" : "idle");
   const setField = <K extends keyof ProjectDraft>(key: K, value: ProjectDraft[K]) =>
     setForm((current) => ({ ...current, [key]: value }));
-  // 갤러리 업로드는 올라갈 때마다 이전 목록을 받아 고치므로(함수형 업데이트) 같은 모양으로 넘긴다.
+  // 갤러리는 이미지 변환이 끝날 때 이전 목록을 받아 고치므로(함수형 업데이트) 같은 모양으로 넘긴다.
   const setGallery: Dispatch<SetStateAction<GalleryItem[]>> = (next) =>
     setForm((current) => ({ ...current, gallery: typeof next === "function" ? next(current.gallery) : next }));
-  // 올리는 중이던 이미지는 다시 올려야 하므로 빼고 보관한다.
-  useSaveDraftOnExpire<ProjectDraft>(draftKey, { ...form, gallery: gallery.filter((item) => item.imageId !== null) });
+  // 새로 고른 이미지(파일)는 보관할 수 없어 빼고, 저장된 이미지만 보관한다.
+  useSaveDraftOnExpire<ProjectDraft>(draftKey, { ...form, gallery: gallery.filter((item) => item.mediaId !== null) });
   const [errors, setErrors] = useState<Errors>({});
 
   const save = useMutation({
-    mutationFn: async (request: ProjectSaveRequest) =>
-      unwrapApiResult(await (project ? updateProjectAction(project.projectId, request) : createProjectAction(request))),
+    mutationFn: async (values: ProjectValues) => {
+      if (project) {
+        const { changes, files } = toProjectChanges(project, values);
+        if (Object.keys(changes).length === 0) return;
+        unwrapApiResult(await updateProjectAction(project.projectId, toFormData(changes, files)));
+        return;
+      }
+      const { data, files } = toCreateRequest(slug, values);
+      unwrapApiResult(await createProjectAction(toFormData(data, files)));
+    },
     onSuccess: async () => {
       clearDraft(draftKey);
       await Promise.all([
@@ -139,20 +235,28 @@ function ProjectFormBody(props: ProjectFormBodyProps) {
     const end = ongoing ? null : parseDate(endDate);
     const next: Errors = {};
     if (!title.trim()) next.title = "제목을 입력해 주세요.";
+    else if (title.trim().length > MAX_LENGTH.title) next.title = `제목은 ${MAX_LENGTH.title}자까지 쓸 수 있어요.`;
     if (!slug) next.slug = "슬러그를 입력해 주세요.";
     else if (!SLUG_PATTERN.test(slug)) next.slug = "영문 소문자, 숫자, 하이픈(-)만 쓸 수 있어요.";
     if (!summary.trim()) next.summary = "요약을 입력해 주세요.";
+    else if (summary.trim().length > MAX_LENGTH.summary)
+      next.summary = `요약은 ${MAX_LENGTH.summary}자까지 쓸 수 있어요.`;
     if (!start) next.startDate = "YYYY.MM.DD 형식으로 입력해 주세요.";
     if (!ongoing && !end) next.endDate = "종료일을 입력하거나 진행 중을 골라 주세요.";
     else if (start && end && end < start) next.endDate = "종료일이 시작일보다 빨라요.";
-    if (!repoPrivate && githubUrl && !isUrl(githubUrl)) next.githubUrl = "https://로 시작하는 주소를 입력해 주세요.";
+    if (!repoPrivate && githubUrl.trim() && !isUrl(githubUrl.trim()))
+      next.githubUrl = "https://로 시작하는 주소를 입력해 주세요.";
+    else if (!repoPrivate && githubUrl.trim().length > MAX_LENGTH.url)
+      next.githubUrl = `GitHub 주소는 ${MAX_LENGTH.url}자까지 쓸 수 있어요.`;
     if (!noSite && !demoUrl.trim()) next.demoUrl = "사이트 주소를 입력하거나 사이트 없음을 골라 주세요.";
     else if (!noSite && !isUrl(demoUrl.trim())) next.demoUrl = "https://로 시작하는 주소를 입력해 주세요.";
+    else if (!noSite && demoUrl.trim().length > MAX_LENGTH.url)
+      next.demoUrl = `사이트 주소는 ${MAX_LENGTH.url}자까지 쓸 수 있어요.`;
     if (skillIds.length === 0) next.skills = "기술 스택을 하나 이상 골라 주세요.";
+    else if (skillIds.length > MAX_SKILLS) next.skills = `기술 스택은 ${MAX_SKILLS}개까지 고를 수 있어요.`;
     if (!content.trim()) next.content = "본문을 입력해 주세요.";
     setErrors(next);
     if (Object.keys(next).length > 0 || !start) return;
-    if (gallery.some((item) => item.imageId === null)) return;
 
     if (!isEdit && slugStatus !== "available") {
       setSlugStatus("checking");
@@ -166,24 +270,19 @@ function ProjectFormBody(props: ProjectFormBodyProps) {
     }
     save.mutate({
       title: title.trim(),
-      slug,
       summary: summary.trim(),
       content,
       startDate: start,
-      endDate: end,
+      endDate: end ?? "",
       // 비공개 레포는 주소를 공개하지 않으므로 저장하지 않는다(Figma: 비공개라 주소를 노출하지 않아요).
-      githubUrl: repoPrivate ? null : githubUrl.trim() || null,
-      // 사이트 없음이면 null로 저장하고, 공개 화면은 사이트 바로가기 버튼을 숨긴다.
-      demoUrl: noSite ? null : demoUrl.trim(),
+      githubUrl: repoPrivate ? "" : githubUrl.trim(),
       repoPrivate,
+      // 사이트 없음이면 주소를 저장하지 않고, 공개 화면은 사이트 바로가기 버튼을 숨긴다.
+      demoUrl: noSite ? "" : demoUrl.trim(),
       skillIds,
-      images: gallery.flatMap((item) =>
-        item.imageId === null ? [] : [{ imageId: item.imageId, url: item.url, caption: item.caption.trim() || null }],
-      ),
+      gallery,
     });
   }
-
-  const uploading = gallery.some((item) => item.imageId === null);
 
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-6">
@@ -195,7 +294,7 @@ function ProjectFormBody(props: ProjectFormBodyProps) {
             <ButtonCompact href="/admin/projects" className="h-11 px-4">
               취소
             </ButtonCompact>
-            <Button type="submit" size="M" disabled={save.isPending || uploading || slugStatus === "checking"}>
+            <Button type="submit" size="M" disabled={save.isPending || slugStatus === "checking"}>
               {isEdit ? "저장하기" : "등록하기"}
             </Button>
           </>

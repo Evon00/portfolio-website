@@ -13,15 +13,9 @@ export * as post from "./post/post.api";
 // 조회수 증가는 방문자 헤더를 넘겨야 해서 직접 쓴 .api.ts다(post-view.api.ts).
 export * as postView from "./post/post-view.api";
 
-import * as projectMock from "./_mock/project";
-import type * as ProjectApi from "./project/project.api";
-export const project = projectMock satisfies typeof ProjectApi;
+export * as project from "./project/project.api";
 
 export * as skill from "./skill/skill.api";
-
-import * as uploadMock from "./_mock/upload";
-import type * as UploadApi from "./upload/upload.api";
-export const upload = uploadMock satisfies typeof UploadApi;
 
 export * as profile from "./profile/profile.api";
 

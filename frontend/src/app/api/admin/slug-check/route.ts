@@ -1,5 +1,5 @@
 import { checkPostSlug } from "@/shared/_controllers/post/index.server";
-import { isProjectSlugAvailable } from "@/shared/_controllers/project/index.server";
+import { checkProjectSlug } from "@/shared/_controllers/project/index.server";
 import { ApiError } from "@/shared/libs/api";
 import { withAdminRoute } from "@/shared/libs/auth/guard";
 
@@ -12,5 +12,5 @@ export const GET = withAdminRoute(async (request): Promise<{ available: boolean 
     throw new ApiError({ status: 400, message: "슬러그와 종류를 확인해 주세요." });
   }
   if (type === "post") return { available: (await checkPostSlug({ postSlug: slug })).available };
-  return isProjectSlugAvailable({ slug });
+  return { available: (await checkProjectSlug({ projectSlug: slug })).available };
 });
