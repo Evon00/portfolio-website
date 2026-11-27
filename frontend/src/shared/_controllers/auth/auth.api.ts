@@ -56,3 +56,9 @@ export async function signIn(input: { username: string; password: string }): Pro
   });
   return toAuthTokens(response, body);
 }
+
+/** refresh 토큰으로 새 access · refresh를 받는다. Spring은 refresh를 바꿔 주므로(rotation) 예전 refresh는 다시 쓸 수 없다. */
+export async function refreshTokens(refreshToken: string): Promise<AuthTokens> {
+  const { response, body } = await postAuth("/api/auth/refresh", { refreshToken });
+  return toAuthTokens(response, body);
+}
